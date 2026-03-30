@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETL Sales Pipeline — Wesley Batista</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080c10;
+    --bg2:      #0d1117;
+    --bg3:      #161b22;
+    --bg4:      #1c2128;
+    --accent:   #00e5ff;
+    --accent2:  #7c3aed;
+    --accent3:  #f59e0b;
+    --green:    #3fb950;
+    --red:      #f85149;
+    --text:     #e6edf3;
+    --muted:    #7d8590;
+    --border:   rgba(0,229,255,0.1);
+    --border2:  rgba(255,255,255,0.06);
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'Cabinet Grotesk', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(8,12,16,0.9);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 3rem;
+    height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: .08em; text-decoration: none; }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; letter-spacing: .1em; text-transform: uppercase; transition: color .2s; }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-pill {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent); padding: 4px 12px; border-radius: 100px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-pill::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 100px 3rem 60px;
+    position: relative; z-index: 1;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .hero-left { flex: 1; }
+  .hero-right { flex: 0 0 420px; }
+
+  .hero-eyebrow {
+    font-family: var(--mono); font-size: 11px; color: var(--accent);
+    letter-spacing: .2em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+  }
+  .hero-eyebrow::before { content: ''; width: 28px; height: 1px; background: var(--accent); }
+
+  h1 {
+    font-size: clamp(40px, 6vw, 68px);
+    font-weight: 800; line-height: 1.05;
+    letter-spacing: -.03em; margin-bottom: 24px;
+  }
+  h1 .outline { color: transparent; -webkit-text-stroke: 1px rgba(0,229,255,.4); }
+  h1 .accent { color: var(--accent); }
+
+  .hero-desc {
+    font-family: var(--mono); font-size: 13px; color: var(--muted);
+    line-height: 1.9; max-width: 520px; margin-bottom: 36px;
+  }
+
+  .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 10px 22px; border-radius: 3px; text-decoration: none;
+    transition: all .2s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--accent); color: #000; font-weight: 600; }
+  .btn-primary:hover { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .btn-outline { border: 1px solid var(--border2); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Pipeline visual */
+  .pipeline-vis {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px; position: relative; overflow: hidden;
+  }
+  .pipeline-vis::before {
+    content: '// pipeline flow';
+    position: absolute; top: 12px; right: 16px;
+    font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .08em;
+  }
+  .pipeline-title { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 20px; }
+  .pipeline-steps { display: flex; flex-direction: column; gap: 4px; }
+  .p-step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all .2s; cursor: default;
+  }
+  .p-step:hover { background: var(--bg3); border-color: var(--border); }
+  .p-step-num { font-family: var(--mono); font-size: 10px; color: var(--muted); width: 20px; }
+  .p-step-icon { font-size: 16px; width: 24px; text-align: center; }
+  .p-step-info { flex: 1; }
+  .p-step-name { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+  .p-step-desc { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .p-step-badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .badge-green { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+  .badge-blue  { background: rgba(0,229,255,.1);  color: var(--accent); border: 1px solid rgba(0,229,255,.25); }
+  .badge-amber { background: rgba(245,158,11,.1); color: var(--accent3); border: 1px solid rgba(245,158,11,.25); }
+
+  .p-connector { width: 1px; height: 10px; background: var(--border); margin-left: 46px; }
+
+  /* KPI cards */
+  .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 28px; }
+  .kpi-card {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 16px;
+    border-top: 2px solid;
+  }
+  .kpi-card.c1 { border-top-color: var(--accent); }
+  .kpi-card.c2 { border-top-color: var(--accent2); }
+  .kpi-card.c3 { border-top-color: var(--accent3); }
+  .kpi-card.c4 { border-top-color: var(--green); }
+  .kpi-val { font-family: var(--mono); font-size: 22px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
+  .kpi-card.c1 .kpi-val { color: var(--accent); }
+  .kpi-card.c2 .kpi-val { color: #a78bfa; }
+  .kpi-card.c3 .kpi-val { color: var(--accent3); }
+  .kpi-card.c4 .kpi-val { color: var(--green); }
+  .kpi-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+  /* SECTIONS */
+  section { position: relative; z-index: 1; padding: 80px 3rem; max-width: 1200px; margin: 0 auto; }
+  .section-divider { border: none; border-top: 1px solid var(--border2); max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+  .sec-tag { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: .2em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .sec-tag::before { content: ''; width: 16px; height: 1px; background: var(--accent); }
+  h2 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; margin-bottom: 14px; }
+  h2 span { color: var(--accent); }
+  .sec-desc { font-family: var(--mono); font-size: 13px; color: var(--muted); max-width: 600px; line-height: 1.85; margin-bottom: 48px; }
+
+  /* ARCHITECTURE */
+  .arch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .arch-card {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 24px; position: relative; overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .arch-card:hover { border-color: rgba(0,229,255,.3); transform: translateY(-2px); }
+  .arch-card-num {
+    font-family: var(--mono); font-size: 48px; font-weight: 600;
+    color: rgba(0,229,255,.06); position: absolute; top: 8px; right: 16px; line-height: 1;
+  }
+  .arch-card-icon { font-size: 24px; margin-bottom: 12px; }
+  .arch-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .arch-card p { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.75; }
+  .arch-card-file {
+    font-family: var(--mono); font-size: 10px; color: var(--accent);
+    background: rgba(0,229,255,.07); border: 1px solid rgba(0,229,255,.15);
+    padding: 3px 8px; border-radius: 3px; display: inline-block; margin-top: 10px;
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 10px; overflow: hidden; margin: 24px 0;
+  }
+  .code-header {
+    background: var(--bg3); padding: 10px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border2);
+  }
+  .code-header-left { display: flex; align-items: center; gap: 8px; }
+  .dot-r { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; }
+  .dot-y { width: 10px; height: 10px; border-radius: 50%; background: #febc2e; }
+  .dot-g { width: 10px; height: 10px; border-radius: 50%; background: #28c840; }
+  .code-filename { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: 8px; }
+  .code-body { padding: 20px; font-family: var(--mono); font-size: 12px; line-height: 1.9; overflow-x: auto; }
+  .c-kw  { color: #ff7b72; }
+  .c-fn  { color: #d2a8ff; }
+  .c-str { color: #a5d6ff; }
+  .c-cm  { color: #484f58; }
+  .c-num { color: #79c0ff; }
+  .c-var { color: #ffa657; }
+
+  /* DAG VISUAL */
+  .dag-container {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 40px; margin-bottom: 32px;
+    overflow-x: auto;
+  }
+  .dag-flow { display: flex; align-items: center; gap: 0; min-width: 700px; }
+  .dag-node {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 14px 18px; min-width: 110px; text-align: center;
+    transition: all .2s; position: relative;
+  }
+  .dag-node:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .dag-node-icon { font-size: 18px; margin-bottom: 6px; }
+  .dag-node-name { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
+  .dag-node-op { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 3px; }
+  .dag-arrow { color: rgba(0,229,255,.4); font-size: 18px; padding: 0 8px; flex-shrink: 0; }
+  .dag-node.success { border-color: rgba(63,185,80,.4); }
+  .dag-node.success::after { content: '✓'; position: absolute; top: -8px; right: -8px; width: 16px; height: 16px; background: var(--green); border-radius: 50%; font-size: 9px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 700; }
+
+  /* DATA SCHEMA */
+  .schema-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .schema-table {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 10px; overflow: hidden;
+  }
+  .schema-header {
+    background: var(--bg3); padding: 12px 18px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .schema-header-icon { font-size: 14px; }
+  .schema-header-name { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+  .schema-header-schema { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .schema-row { display: flex; align-items: center; padding: 8px 18px; border-bottom: 1px solid var(--border2); gap: 10px; }
+  .schema-row:last-child { border-bottom: none; }
+  .schema-row:hover { background: var(--bg3); }
+  .schema-col-name { font-family: var(--mono); font-size: 11px; color: var(--text); flex: 1; }
+  .schema-col-type { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .schema-col-pk { font-family: var(--mono); font-size: 9px; background: rgba(245,158,11,.15); color: var(--accent3); border: 1px solid rgba(245,158,11,.3); padding: 1px 6px; border-radius: 2px; }
+  .schema-col-fk { font-family: var(--mono); font-size: 9px; background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); padding: 1px 6px; border-radius: 2px; }
+
+  /* REPORTS SECTION */
+  .reports-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .report-card {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 10px; overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .report-card:hover { border-color: rgba(0,229,255,.3); transform: translateY(-2px); }
+  .report-preview {
+    height: 160px; background: var(--bg3);
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--border2); position: relative; overflow: hidden;
+  }
+  .chart-bars { display: flex; align-items: flex-end; gap: 8px; height: 100px; padding: 0 20px; }
+  .chart-bar { width: 28px; border-radius: 4px 4px 0 0; background: linear-gradient(to top, rgba(0,229,255,.8), rgba(0,229,255,.3)); animation: bar-grow 1s ease both; }
+  @keyframes bar-grow { from { transform: scaleY(0); transform-origin: bottom; } to { transform: scaleY(1); } }
+  .chart-line-preview { width: 100%; height: 80px; padding: 10px 20px; }
+  .chart-donut { width: 90px; height: 90px; border-radius: 50%; background: conic-gradient(#00e5ff 0% 45%, #7c3aed 45% 70%, #f59e0b 70% 85%, #3fb950 85% 100%); position: relative; }
+  .chart-donut::after { content: ''; position: absolute; inset: 20px; background: var(--bg3); border-radius: 50%; }
+  .heatmap-preview { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 16px; }
+  .heatmap-cell { height: 18px; border-radius: 2px; }
+  .report-body { padding: 18px; }
+  .report-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .report-desc { font-family: var(--mono); font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .report-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .r-tag { font-family: var(--mono); font-size: 9px; padding: 2px 8px; border-radius: 2px; background: rgba(0,229,255,.07); border: 1px solid rgba(0,229,255,.15); color: var(--accent); }
+
+  /* STACK */
+  .stack-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+  .stack-card {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 20px; text-align: center;
+    transition: all .2s;
+  }
+  .stack-card:hover { border-color: rgba(0,229,255,.3); transform: translateY(-2px); }
+  .stack-icon { font-size: 26px; margin-bottom: 10px; }
+  .stack-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .stack-role { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* HOW TO RUN */
+  .steps-list { display: flex; flex-direction: column; gap: 0; }
+  .step-item {
+    display: grid; grid-template-columns: 48px 1fr;
+    gap: 20px; position: relative; padding-bottom: 32px;
+  }
+  .step-item:last-child { padding-bottom: 0; }
+  .step-item::before {
+    content: '';
+    position: absolute; left: 23px; top: 48px; bottom: 0;
+    width: 1px; background: linear-gradient(to bottom, var(--accent), transparent);
+  }
+  .step-item:last-child::before { display: none; }
+  .step-num {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(0,229,255,.1); border: 1px solid rgba(0,229,255,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--accent);
+    flex-shrink: 0; position: relative; z-index: 1;
+  }
+  .step-content { padding-top: 8px; }
+  .step-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .step-desc { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.75; margin-bottom: 12px; }
+  .step-cmd {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 16px;
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .step-cmd::before { content: '$'; color: var(--muted); }
+
+  /* FOOTER */
+  footer {
+    position: relative; z-index: 1;
+    background: var(--bg2); border-top: 1px solid var(--border2);
+    padding: 48px 3rem 32px; text-align: center;
+  }
+  footer .f-name { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  footer .f-role { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+  footer .f-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; }
+  footer .f-links a { font-family: var(--mono); font-size: 12px; color: var(--muted); text-decoration: none; transition: color .2s; }
+  footer .f-links a:hover { color: var(--accent); }
+  footer .f-copy { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,.2); border-top: 1px solid var(--border2); padding-top: 24px; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+  .fade-up { animation: fadeUp .6s ease both; }
+  .d1 { animation-delay: .1s; } .d2 { animation-delay: .2s; } .d3 { animation-delay: .3s; }
+
+  @media (max-width: 900px) {
+    .hero { flex-direction: column; gap: 40px; }
+    .hero-right { flex: none; width: 100%; }
+    .arch-grid, .schema-grid, .reports-grid, .stack-grid { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .dag-flow { gap: 0; }
+    nav .nav-links { display: none; }
+    section { padding: 60px 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">// etl-sales-pipeline</a>
+  <ul class="nav-links">
+    <li><a href="#arquitetura">Arquitetura</a></li>
+    <li><a href="#dag">DAG</a></li>
+    <li><a href="#banco">Banco</a></li>
+    <li><a href="#relatorios">Relatórios</a></li>
+    <li><a href="#rodar">Como Rodar</a></li>
+  </ul>
+  <div class="nav-pill">Airflow 2.8.1</div>
+</nav>
+
+<!-- HERO -->
+<div style="position:relative;z-index:1;">
+<div class="hero">
+  <div class="hero-left fade-up">
+    <div class="hero-eyebrow">Pipeline de Dados</div>
+    <h1>
+      ETL <span class="outline">Sales</span><br>
+      <span class="accent">Pipeline</span>
+    </h1>
+    <p class="hero-desc">
+      Pipeline ETL completo orquestrado com Apache Airflow.<br/>
+      Extrai dados de vendas → transforma → carrega no PostgreSQL<br/>
+      → gera dashboard HTML interativo + relatório PDF automaticamente.
+    </p>
+    <div class="hero-btns">
+      <a href="https://github.com/wesleybatistaluz/etl-pipeline" class="btn btn-primary" target="_blank">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="#rodar" class="btn btn-outline">Como Rodar →</a>
+    </div>
+
+    <div class="kpi-row d2">
+      <div class="kpi-card c1">
+        <div class="kpi-val">6</div>
+        <div class="kpi-label">Tasks no DAG</div>
+      </div>
+      <div class="kpi-card c2">
+        <div class="kpi-val">5K</div>
+        <div class="kpi-label">Registros / Run</div>
+      </div>
+      <div class="kpi-card c3">
+        <div class="kpi-val">4</div>
+        <div class="kpi-label">Tabelas no DW</div>
+      </div>
+      <div class="kpi-card c4">
+        <div class="kpi-val">06:00</div>
+        <div class="kpi-label">Execução Diária</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right fade-up d2">
+    <div class="pipeline-vis">
+      <div class="pipeline-title">// etl_sales_pipeline · dag</div>
+      <div class="pipeline-steps">
+
+        <div class="p-step">
+          <div class="p-step-num">01</div>
+          <div class="p-step-icon">📥</div>
+          <div class="p-step-info">
+            <div class="p-step-name">extract</div>
+            <div class="p-step-desc">Gera 5.000 registros de vendas</div>
+          </div>
+          <div class="p-step-badge badge-green">PythonOperator</div>
+        </div>
+        <div class="p-connector"></div>
+
+        <div class="p-step">
+          <div class="p-step-num">02</div>
+          <div class="p-step-icon">✅</div>
+          <div class="p-step-info">
+            <div class="p-step-name">validate</div>
+            <div class="p-step-desc">Verifica integridade dos dados</div>
+          </div>
+          <div class="p-step-badge badge-green">PythonOperator</div>
+        </div>
+        <div class="p-connector"></div>
+
+        <div class="p-step">
+          <div class="p-step-num">03</div>
+          <div class="p-step-icon">⚙️</div>
+          <div class="p-step-info">
+            <div class="p-step-name">transform</div>
+            <div class="p-step-desc">Limpa, enriquece e calcula KPIs</div>
+          </div>
+          <div class="p-step-badge badge-green">PythonOperator</div>
+        </div>
+        <div class="p-connector"></div>
+
+        <div class="p-step">
+          <div class="p-step-num">04</div>
+          <div class="p-step-icon">💾</div>
+          <div class="p-step-info">
+            <div class="p-step-name">load</div>
+            <div class="p-step-desc">Upsert no PostgreSQL warehouse</div>
+          </div>
+          <div class="p-step-badge badge-blue">PythonOperator</div>
+        </div>
+        <div class="p-connector"></div>
+
+        <div class="p-step">
+          <div class="p-step-num">05</div>
+          <div class="p-step-icon">📊</div>
+          <div class="p-step-info">
+            <div class="p-step-name">report</div>
+            <div class="p-step-desc">Gera HTML + PDF + 6 gráficos</div>
+          </div>
+          <div class="p-step-badge badge-amber">PythonOperator</div>
+        </div>
+        <div class="p-connector"></div>
+
+        <div class="p-step">
+          <div class="p-step-num">06</div>
+          <div class="p-step-icon">🔔</div>
+          <div class="p-step-info">
+            <div class="p-step-name">notify</div>
+            <div class="p-step-desc">Loga resumo do pipeline</div>
+          </div>
+          <div class="p-step-badge badge-green">PythonOperator</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ARQUITETURA -->
+<section id="arquitetura">
+  <div class="sec-tag">01 — Arquitetura</div>
+  <h2>Como o pipeline <span>funciona</span></h2>
+  <p class="sec-desc">Cada módulo é independente e testável. O Airflow orquestra a execução, garante retry automático em caso de falha e agenda a execução diária.</p>
+
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="arch-card-num">E</div>
+      <div class="arch-card-icon">📥</div>
+      <h3>Extract</h3>
+      <p>Gera dados de vendas simulados com a biblioteca Faker — produtos, categorias, regiões, preços e descontos realistas. Em produção, aqui entraria a leitura de uma API, S3, banco legado ou arquivo CSV.</p>
+      <span class="arch-card-file">src/extract/extract.py</span>
+    </div>
+    <div class="arch-card">
+      <div class="arch-card-num">T</div>
+      <div class="arch-card-icon">⚙️</div>
+      <h3>Transform</h3>
+      <p>Limpa duplicatas, remove outliers, trata nulos e cria colunas calculadas: receita bruta, líquida, desconto aplicado, segmentação de ticket e features de tempo (mês, trimestre, semana).</p>
+      <span class="arch-card-file">src/transform/transform.py</span>
+    </div>
+    <div class="arch-card">
+      <div class="arch-card-num">L</div>
+      <div class="arch-card-icon">💾</div>
+      <h3>Load</h3>
+      <p>Carrega os dados no PostgreSQL usando upsert inteligente — nunca duplica registros. Mantém staging para rastreabilidade, fact table para análise e dimensões de produto e região.</p>
+      <span class="arch-card-file">src/load/load.py</span>
+    </div>
+    <div class="arch-card">
+      <div class="arch-card-num">R</div>
+      <div class="arch-card-icon">📊</div>
+      <h3>Report</h3>
+      <p>Gera 6 gráficos com matplotlib/seaborn, um dashboard HTML totalmente interativo com Plotly e um relatório PDF completo com capa, KPIs e tabelas usando fpdf2.</p>
+      <span class="arch-card-file">src/reports/generate_report.py</span>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:32px;">
+    <div class="code-header">
+      <div class="code-header-left">
+        <div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div>
+        <span class="code-filename">📁 etl-pipeline/</span>
+      </div>
+    </div>
+    <div class="code-body">
+<span style="color:#484f58">├── dags/</span>
+<span style="color:#00e5ff">│   └── dag_etl_sales.py</span>       <span style="color:#484f58"># DAG principal — 6 tasks em sequência</span>
+<span style="color:#484f58">├── src/</span>
+<span style="color:#ffa657">│   ├── extract/extract.py</span>     <span style="color:#484f58"># Geração de dados com Faker</span>
+<span style="color:#ffa657">│   ├── transform/transform.py</span> <span style="color:#484f58"># Limpeza + enriquecimento</span>
+<span style="color:#ffa657">│   ├── load/load.py</span>           <span style="color:#484f58"># Upsert PostgreSQL (staging + DW)</span>
+<span style="color:#ffa657">│   └── reports/generate_report.py</span> <span style="color:#484f58"># matplotlib + plotly + fpdf2</span>
+<span style="color:#484f58">├── data/</span>
+<span style="color:#484f58">│   ├── raw/</span>                    <span style="color:#484f58"># CSV bruto gerado pelo extract</span>
+<span style="color:#484f58">│   └── processed/</span>             <span style="color:#484f58"># CSV limpo + sumário mensal</span>
+<span style="color:#484f58">├── reports/</span>
+<span style="color:#484f58">│   ├── images/</span>                <span style="color:#484f58"># 6 PNGs matplotlib</span>
+<span style="color:#484f58">│   └── output/</span>               <span style="color:#484f58"># dashboard.html + relatorio.pdf</span>
+<span style="color:#484f58">├── docker/init_db.sql</span>         <span style="color:#484f58"># Cria schemas staging + warehouse</span>
+<span style="color:#484f58">└── docker-compose.yml</span>        <span style="color:#484f58"># Airflow + PostgreSQL + volumes</span>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- DAG -->
+<section id="dag">
+  <div class="sec-tag">02 — DAG do Airflow</div>
+  <h2>Visualização do <span>fluxo</span></h2>
+  <p class="sec-desc">O DAG é agendado para rodar diariamente às 06:00. Cada task tem retry automático (2 tentativas) com intervalo de 3 minutos.</p>
+
+  <div class="dag-container">
+    <div class="dag-flow">
+      <div class="dag-node success">
+        <div class="dag-node-icon">📥</div>
+        <div class="dag-node-name">extract</div>
+        <div class="dag-node-op">PythonOperator</div>
+      </div>
+      <div class="dag-arrow">→</div>
+      <div class="dag-node success">
+        <div class="dag-node-icon">✅</div>
+        <div class="dag-node-name">validate</div>
+        <div class="dag-node-op">PythonOperator</div>
+      </div>
+      <div class="dag-arrow">→</div>
+      <div class="dag-node success">
+        <div class="dag-node-icon">⚙️</div>
+        <div class="dag-node-name">transform</div>
+        <div class="dag-node-op">PythonOperator</div>
+      </div>
+      <div class="dag-arrow">→</div>
+      <div class="dag-node success">
+        <div class="dag-node-icon">💾</div>
+        <div class="dag-node-name">load</div>
+        <div class="dag-node-op">PythonOperator</div>
+      </div>
+      <div class="dag-arrow">→</div>
+      <div class="dag-node success">
+        <div class="dag-node-icon">📊</div>
+        <div class="dag-node-name">report</div>
+        <div class="dag-node-op">PythonOperator</div>
+      </div>
+      <div class="dag-arrow">→</div>
+      <div class="dag-node success">
+        <div class="dag-node-icon">🔔</div>
+        <div class="dag-node-name">notify</div>
+        <div class="dag-node-op">PythonOperator</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-header-left">
+        <div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div>
+        <span class="code-filename">dags/dag_etl_sales.py — Definição do DAG</span>
+      </div>
+    </div>
+    <div class="code-body">
+<span class="c-kw">with</span> <span class="c-fn">DAG</span>(
+    dag_id=<span class="c-str">"etl_sales_pipeline"</span>,
+    description=<span class="c-str">"Extract → Transform → Load → Report"</span>,
+    schedule_interval=<span class="c-str">"0 6 * * *"</span>,   <span class="c-cm"># diário 06:00</span>
+    default_args={
+        <span class="c-str">"retries"</span>:      <span class="c-num">2</span>,
+        <span class="c-str">"retry_delay"</span>: <span class="c-fn">timedelta</span>(minutes=<span class="c-num">3</span>),
+        <span class="c-str">"owner"</span>:       <span class="c-str">"wesley_batista"</span>,
+    },
+    catchup=<span class="c-kw">False</span>, max_active_runs=<span class="c-num">1</span>,
+    tags=[<span class="c-str">"etl"</span>, <span class="c-str">"sales"</span>, <span class="c-str">"portfolio"</span>],
+) <span class="c-kw">as</span> dag:
+
+    <span class="c-cm"># Dependências em cadeia</span>
+    t_extract >> t_validate >> t_transform >> t_load >> t_report >> t_notify
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- BANCO DE DADOS -->
+<section id="banco">
+  <div class="sec-tag">03 — Data Warehouse</div>
+  <h2>Esquema do <span>banco</span></h2>
+  <p class="sec-desc">Arquitetura com dois schemas: staging para dados brutos e warehouse para dados transformados. Padrão medallion simplificado.</p>
+
+  <div class="schema-grid">
+    <div class="schema-table">
+      <div class="schema-header">
+        <div class="schema-header-icon">⭐</div>
+        <div>
+          <div class="schema-header-name">fact_sales</div>
+          <div class="schema-header-schema">warehouse.fact_sales</div>
+        </div>
+      </div>
+      <div class="schema-row"><span class="schema-col-name">id</span><span class="schema-col-type">SERIAL</span><span class="schema-col-pk">PK</span></div>
+      <div class="schema-row"><span class="schema-col-name">order_id</span><span class="schema-col-type">VARCHAR(20)</span><span class="schema-col-pk">UNIQUE</span></div>
+      <div class="schema-row"><span class="schema-col-name">customer_id</span><span class="schema-col-type">VARCHAR(20)</span></div>
+      <div class="schema-row"><span class="schema-col-name">category</span><span class="schema-col-type">VARCHAR(50)</span></div>
+      <div class="schema-row"><span class="schema-col-name">net_revenue</span><span class="schema-col-type">NUMERIC(12,2)</span></div>
+      <div class="schema-row"><span class="schema-col-name">gross_revenue</span><span class="schema-col-type">NUMERIC(12,2)</span></div>
+      <div class="schema-row"><span class="schema-col-name">discount_amount</span><span class="schema-col-type">NUMERIC(12,2)</span></div>
+      <div class="schema-row"><span class="schema-col-name">order_date</span><span class="schema-col-type">DATE</span></div>
+      <div class="schema-row"><span class="schema-col-name">order_year / month</span><span class="schema-col-type">INTEGER</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="schema-table">
+        <div class="schema-header">
+          <div class="schema-header-icon">📦</div>
+          <div>
+            <div class="schema-header-name">dim_products</div>
+            <div class="schema-header-schema">warehouse.dim_products</div>
+          </div>
+        </div>
+        <div class="schema-row"><span class="schema-col-name">id</span><span class="schema-col-type">SERIAL</span><span class="schema-col-pk">PK</span></div>
+        <div class="schema-row"><span class="schema-col-name">product_name</span><span class="schema-col-type">VARCHAR(100)</span><span class="schema-col-pk">UNIQUE</span></div>
+        <div class="schema-row"><span class="schema-col-name">category</span><span class="schema-col-type">VARCHAR(50)</span></div>
+        <div class="schema-row"><span class="schema-col-name">avg_price</span><span class="schema-col-type">NUMERIC(10,2)</span></div>
+      </div>
+
+      <div class="schema-table">
+        <div class="schema-header">
+          <div class="schema-header-icon">📅</div>
+          <div>
+            <div class="schema-header-name">monthly_summary</div>
+            <div class="schema-header-schema">warehouse.monthly_summary</div>
+          </div>
+        </div>
+        <div class="schema-row"><span class="schema-col-name">year_month</span><span class="schema-col-type">VARCHAR(7)</span><span class="schema-col-pk">UNIQUE</span></div>
+        <div class="schema-row"><span class="schema-col-name">total_orders</span><span class="schema-col-type">INTEGER</span></div>
+        <div class="schema-row"><span class="schema-col-name">total_revenue</span><span class="schema-col-type">NUMERIC(14,2)</span></div>
+        <div class="schema-row"><span class="schema-col-name">top_category</span><span class="schema-col-type">VARCHAR(50)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- RELATÓRIOS -->
+<section id="relatorios">
+  <div class="sec-tag">04 — Relatórios Gerados</div>
+  <h2>Outputs do <span>pipeline</span></h2>
+  <p class="sec-desc">A cada execução o pipeline gera automaticamente um dashboard HTML interativo e um relatório PDF com 6 gráficos matplotlib.</p>
+
+  <div class="reports-grid">
+    <div class="report-card">
+      <div class="report-preview">
+        <div class="chart-bars">
+          <div class="chart-bar" style="height:40%;animation-delay:.1s"></div>
+          <div class="chart-bar" style="height:65%;animation-delay:.15s"></div>
+          <div class="chart-bar" style="height:55%;animation-delay:.2s"></div>
+          <div class="chart-bar" style="height:80%;animation-delay:.25s"></div>
+          <div class="chart-bar" style="height:70%;animation-delay:.3s"></div>
+          <div class="chart-bar" style="height:90%;animation-delay:.35s"></div>
+          <div class="chart-bar" style="height:75%;animation-delay:.4s"></div>
+          <div class="chart-bar" style="height:100%;animation-delay:.45s"></div>
+        </div>
+      </div>
+      <div class="report-body">
+        <div class="report-title">Dashboard HTML Interativo</div>
+        <div class="report-desc">Plotly com 6 KPIs + receita mensal + categorias + regiões + top produtos + heatmap. Filtros e zoom nativos.</div>
+        <div class="report-tags">
+          <span class="r-tag">Plotly</span>
+          <span class="r-tag">HTML</span>
+          <span class="r-tag">Interativo</span>
+          <span class="r-tag">dashboard.html</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-preview" style="background:var(--bg4);">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:120px;height:16px;background:rgba(0,229,255,.3);border-radius:3px;"></div>
+          <div style="width:180px;height:10px;background:rgba(255,255,255,.1);border-radius:3px;"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <div style="width:70px;height:50px;background:rgba(0,229,255,.15);border-radius:4px;"></div>
+            <div style="width:70px;height:50px;background:rgba(124,58,237,.15);border-radius:4px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="report-body">
+        <div class="report-title">Relatório PDF Completo</div>
+        <div class="report-desc">Capa com KPIs, 6 páginas de gráficos matplotlib e tabela top 10 produtos. Pronto para apresentação.</div>
+        <div class="report-tags">
+          <span class="r-tag">fpdf2</span>
+          <span class="r-tag">matplotlib</span>
+          <span class="r-tag">PDF</span>
+          <span class="r-tag">relatorio.pdf</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-preview">
+        <div class="chart-donut"></div>
+      </div>
+      <div class="report-body">
+        <div class="report-title">Gráficos por Categoria e Região</div>
+        <div class="report-desc">Barras horizontais e gráfico de rosca mostrando participação de receita por categoria e distribuição geográfica.</div>
+        <div class="report-tags">
+          <span class="r-tag">seaborn</span>
+          <span class="r-tag">matplotlib</span>
+          <span class="r-tag">PNG 150dpi</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-preview">
+        <div class="heatmap-preview">
+          {" ".join([f'<div class="heatmap-cell" style="background:rgba(0,229,255,{round(0.05 + (i%6)*0.15,2)})"></div>' for i in range(30)])}
+        </div>
+      </div>
+      <div class="report-body">
+        <div class="report-title">Heatmap Categoria × Mês</div>
+        <div class="report-desc">Mapa de calor mostrando a distribuição de receita por categoria ao longo dos meses. Identifica sazonalidade instantaneamente.</div>
+        <div class="report-tags">
+          <span class="r-tag">seaborn</span>
+          <span class="r-tag">heatmap</span>
+          <span class="r-tag">sazonalidade</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- STACK -->
+<section>
+  <div class="sec-tag">05 — Stack Tecnológico</div>
+  <h2>Ferramentas <span>utilizadas</span></h2>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-icon">🌀</div>
+      <div class="stack-name">Apache Airflow</div>
+      <div class="stack-role">Orquestração do pipeline</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🐘</div>
+      <div class="stack-name">PostgreSQL 15</div>
+      <div class="stack-role">Data Warehouse</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🐳</div>
+      <div class="stack-name">Docker Compose</div>
+      <div class="stack-role">Containerização</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🐼</div>
+      <div class="stack-name">pandas</div>
+      <div class="stack-role">Transformação de dados</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">📊</div>
+      <div class="stack-name">Plotly</div>
+      <div class="stack-role">Dashboard interativo</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🎨</div>
+      <div class="stack-name">matplotlib / seaborn</div>
+      <div class="stack-role">Gráficos estáticos</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">📄</div>
+      <div class="stack-name">fpdf2</div>
+      <div class="stack-role">Geração de PDF</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🏭</div>
+      <div class="stack-name">SQLAlchemy</div>
+      <div class="stack-role">ORM + upsert</div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- COMO RODAR -->
+<section id="rodar">
+  <div class="sec-tag">06 — Como Rodar</div>
+  <h2>Passo a <span>passo</span></h2>
+  <p class="sec-desc">Apenas Docker Desktop é necessário. Todo o ambiente sobe automaticamente com um único comando.</p>
+
+  <div class="steps-list">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Instale o Docker Desktop</div>
+        <div class="step-desc">Baixe em docker.com/products/docker-desktop e instale. Abra o Docker Desktop e aguarde a baleia aparecer na barra de tarefas.</div>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Clone o repositório e suba os containers</div>
+        <div class="step-desc">Abra o terminal na pasta do projeto e execute:</div>
+        <div class="step-cmd">docker compose up -d</div>
+        <div class="step-desc" style="margin-top:8px;">Aguarde ~2-3 minutos para o Airflow inicializar completamente.</div>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Instale as dependências nos containers</div>
+        <div class="step-desc">Execute nos dois containers:</div>
+        <div class="step-cmd">docker exec -u airflow etl-pipeline-airflow-webserver-1 python -m pip install pandas matplotlib seaborn plotly fpdf2 sqlalchemy psycopg2-binary faker openpyxl</div>
+        <div class="step-cmd" style="margin-top:8px;">docker exec -u airflow etl-pipeline-airflow-scheduler-1 python -m pip install pandas matplotlib seaborn plotly fpdf2 sqlalchemy psycopg2-binary faker openpyxl</div>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Acesse o Airflow UI e execute o DAG</div>
+        <div class="step-desc">Abra http://localhost:8080 — login: admin / senha: admin. Ative o DAG etl_sales_pipeline e clique em ▶ Trigger DAG.</div>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Baixe os relatórios após tudo verde</div>
+        <div class="step-desc">Quando todas as 6 tasks ficarem verdes (~3-5 min):</div>
+        <div class="step-cmd">docker cp etl-pipeline-airflow-scheduler-1:/opt/airflow/reports/output/dashboard.html .</div>
+        <div class="step-cmd" style="margin-top:8px;">docker cp etl-pipeline-airflow-scheduler-1:/opt/airflow/reports/output/relatorio_vendas.pdf .</div>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-title">Consulte o banco de dados</div>
+        <div class="step-desc">Para ver os dados carregados no PostgreSQL:</div>
+        <div class="step-cmd">docker exec -it etl-pipeline-postgres-1 psql -U airflow -d airflow</div>
+        <div class="step-desc" style="margin-top:8px;">Depois rode: SELECT COUNT(*) FROM warehouse.fact_sales;</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p class="f-name">Wesley Batista Luz</p>
+  <p class="f-role">// Data Engineer & ML Engineer</p>
+  <div class="f-links">
+    <a href="https://github.com/wesleybatistaluz" target="_blank">GitHub</a>
+    <a href="https://linkedin.com/in/wesleybatistaluz" target="_blank">LinkedIn</a>
+    <a href="mailto:wesleybatista1107@hotmail.com">Email</a>
+    <a href="https://wa.me/5535999275253" target="_blank">WhatsApp</a>
+  </div>
+  <div class="f-copy">
+    ETL Sales Pipeline · Apache Airflow + PostgreSQL + Docker · 2025
+  </div>
+</footer>
+
+</body>
+</html>

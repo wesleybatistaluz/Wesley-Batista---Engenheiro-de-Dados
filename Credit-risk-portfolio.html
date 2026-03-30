@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit Risk ML — Wesley Batista</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #0f7a5a;
+    --green-light: #e6f5ef;
+    --green-mid: #1a9c72;
+    --red: #c0392b;
+    --red-light: #fdf0ef;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --ink: #1a1a1a;
+    --ink-2: #3d3d3d;
+    --ink-3: #6b6b6b;
+    --ink-4: #9a9a9a;
+    --surface: #f8f7f4;
+    --surface-2: #f0ede8;
+    --border: rgba(0,0,0,0.09);
+    --border-2: rgba(0,0,0,0.15);
+    --white: #ffffff;
+    --mono: 'DM Mono', monospace;
+    --serif: 'DM Serif Display', serif;
+    --sans: 'Sora', sans-serif;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--surface);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+
+  /* Nav */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(248,247,244,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--ink); text-decoration: none; }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a { font-size: 13px; color: var(--ink-3); text-decoration: none; transition: color .2s; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-badge {
+    background: var(--green); color: white;
+    font-family: var(--mono); font-size: 11px; padding: 4px 10px;
+    border-radius: 100px; letter-spacing: .03em;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 120px 2rem 80px;
+    max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--green-light); color: var(--green);
+    font-size: 12px; font-weight: 500; padding: 5px 12px;
+    border-radius: 100px; margin-bottom: 24px; letter-spacing: .04em;
+  }
+  .hero-tag::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+  h1 { font-family: var(--serif); font-size: clamp(38px, 5vw, 56px); line-height: 1.1; color: var(--ink); margin-bottom: 20px; }
+  h1 em { font-style: italic; color: var(--green); }
+  .hero-desc { font-size: 17px; color: var(--ink-2); line-height: 1.75; margin-bottom: 32px; }
+  .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500;
+    text-decoration: none; transition: all .2s; cursor: pointer; border: none;
+  }
+  .btn-primary { background: var(--ink); color: white; }
+  .btn-primary:hover { background: var(--ink-2); transform: translateY(-1px); }
+  .btn-outline { background: white; color: var(--ink); border: 1px solid var(--border-2); }
+  .btn-outline:hover { background: var(--surface-2); transform: translateY(-1px); }
+
+  /* Hero stats */
+  .hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .stat-card.accent-green { border-top: 3px solid var(--green); }
+  .stat-card.accent-red { border-top: 3px solid var(--red); }
+  .stat-card.accent-amber { border-top: 3px solid var(--amber); }
+  .stat-card.accent-blue { border-top: 3px solid #2563eb; }
+  .stat-label { font-size: 11px; font-weight: 500; color: var(--ink-4); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 500; color: var(--ink); line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+
+  /* Sections */
+  section { padding: 80px 2rem; max-width: 1100px; margin: 0 auto; }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--green); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
+  h2 { font-family: var(--serif); font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin-bottom: 16px; }
+  .section-desc { font-size: 17px; color: var(--ink-2); max-width: 600px; line-height: 1.75; margin-bottom: 48px; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); max-width: 1100px; margin: 0 auto; }
+
+  /* Problem section */
+  .problem-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .problem-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .problem-icon { font-size: 24px; margin-bottom: 12px; }
+  .problem-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .problem-card p { font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+
+  /* Architecture */
+  .arch-flow {
+    background: white; border: 1px solid var(--border);
+    border-radius: 16px; padding: 40px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .pipeline { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; overflow-x: auto; }
+  .pipe-step {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: 10px; padding: 16px 20px;
+    text-align: center; min-width: 120px;
+  }
+  .pipe-step .step-icon { font-size: 20px; margin-bottom: 6px; }
+  .pipe-step .step-name { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .pipe-step .step-file { font-family: var(--mono); font-size: 10px; color: var(--ink-4); margin-top: 3px; }
+  .pipe-arrow { color: var(--ink-4); font-size: 18px; padding: 0 8px; flex-shrink: 0; }
+
+  /* Dataset */
+  .dataset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+  .feature-table { width: 100%; border-collapse: collapse; }
+  .feature-table th {
+    text-align: left; font-size: 11px; font-weight: 600; color: var(--ink-3);
+    letter-spacing: .06em; text-transform: uppercase;
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+  }
+  .feature-table td { font-size: 13px; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--ink-2); }
+  .feature-table tr:last-child td { border-bottom: none; }
+  .feature-table td:first-child { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px; letter-spacing: .03em;
+  }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-blue { background: #eff6ff; color: #1d4ed8; }
+
+  /* Model */
+  .model-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .model-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .model-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+  .model-card p { font-size: 13px; color: var(--ink-2); line-height: 1.6; }
+  .model-card .highlight { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--green); }
+
+  /* Results */
+  .results-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 32px; align-items: start; }
+  .metrics-list { display: flex; flex-direction: column; gap: 12px; }
+  .metric-row {
+    background: white; border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .metric-name { font-size: 13px; color: var(--ink-2); }
+  .metric-val { font-family: var(--mono); font-size: 16px; font-weight: 500; }
+  .metric-val.good { color: var(--green); }
+  .metric-val.mid { color: var(--amber); }
+
+  /* Confusion matrix */
+  .cm-container {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 32px;
+    box-shadow: var(--shadow);
+  }
+  .cm-title { font-size: 14px; font-weight: 600; color: var(--ink-3); text-align: center; margin-bottom: 20px; }
+  .cm-table { width: 100%; border-collapse: separate; border-spacing: 6px; }
+  .cm-table th { font-size: 11px; color: var(--ink-4); font-weight: 500; padding: 4px; text-align: center; }
+  .cm-cell {
+    border-radius: 8px; padding: 20px;
+    text-align: center;
+  }
+  .cm-cell .count { font-family: var(--mono); font-size: 22px; font-weight: 500; }
+  .cm-cell .pct { font-size: 12px; margin-top: 2px; }
+  .tp { background: #dcfce7; }
+  .tp .count { color: #16a34a; }
+  .tp .pct { color: #4ade80; }
+  .tn { background: #dcfce7; }
+  .tn .count { color: #16a34a; }
+  .tn .pct { color: #4ade80; }
+  .fp { background: #fef9c3; }
+  .fp .count { color: #ca8a04; }
+  .fp .pct { color: #fbbf24; }
+  .fn { background: #fee2e2; }
+  .fn .count { color: #dc2626; }
+  .fn .pct { color: #f87171; }
+
+  /* API section */
+  .api-demo {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-bottom: 40px;
+  }
+  .terminal {
+    background: #1a1a2e; border-radius: 12px; overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .terminal-bar {
+    background: #2d2d44; padding: 10px 16px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .terminal-content { padding: 20px; font-family: var(--mono); font-size: 12px; line-height: 1.8; }
+  .t-muted { color: #6b7db3; }
+  .t-green { color: #4ade80; }
+  .t-yellow { color: #fbbf24; }
+  .t-blue { color: #60a5fa; }
+  .t-white { color: #e2e8f0; }
+  .t-red { color: #f87171; }
+
+  /* Response card */
+  .response-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .response-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .response-header span { font-size: 13px; color: var(--ink-3); font-family: var(--mono); }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+  }
+  .status-200 { background: var(--green-light); color: var(--green); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .response-body { padding: 20px; }
+  .json-line { font-family: var(--mono); font-size: 13px; line-height: 2; color: var(--ink-2); }
+  .json-key { color: #7c3aed; }
+  .json-str { color: #059669; }
+  .json-num { color: #2563eb; }
+  .json-bool { color: #d97706; }
+
+  /* Decision cards */
+  .decision-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .decision-card {
+    border-radius: 12px; padding: 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .decision-card.approve { background: var(--green-light); border: 1px solid rgba(15,122,90,.2); }
+  .decision-card.deny { background: var(--red-light); border: 1px solid rgba(192,57,43,.15); }
+  .decision-icon { font-size: 32px; }
+  .decision-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+  .decision-card.approve .decision-label { color: var(--green); }
+  .decision-card.deny .decision-label { color: var(--red); }
+  .decision-value { font-family: var(--mono); font-size: 18px; font-weight: 500; }
+
+  /* Stack section */
+  .stack-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stack-card {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    text-align: center; box-shadow: var(--shadow);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .stack-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .stack-icon { font-size: 28px; margin-bottom: 10px; }
+  .stack-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .stack-desc { font-size: 12px; color: var(--ink-3); }
+
+  /* Code block */
+  .code-block {
+    background: #1a1a2e; border-radius: 12px; overflow: hidden;
+    margin: 24px 0;
+  }
+  .code-header {
+    background: #2d2d44; padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .code-header span { font-family: var(--mono); font-size: 12px; color: #8892b0; }
+  .code-body { padding: 20px; font-family: var(--mono); font-size: 13px; line-height: 1.8; color: #e2e8f0; overflow-x: auto; }
+  .c-comment { color: #6b7db3; }
+  .c-key { color: #ff7eb3; }
+  .c-string { color: #7ee787; }
+  .c-num { color: #79c0ff; }
+  .c-fn { color: #d2a8ff; }
+  .c-var { color: #ffa657; }
+
+  /* Footer */
+  footer {
+    background: var(--ink); color: rgba(255,255,255,0.6);
+    padding: 48px 2rem 32px;
+    text-align: center;
+  }
+  footer .name { font-family: var(--serif); font-size: 28px; color: white; margin-bottom: 8px; }
+  footer .links { display: flex; gap: 20px; justify-content: center; margin: 16px 0 32px; }
+  footer .links a { color: rgba(255,255,255,0.5); font-size: 14px; text-decoration: none; transition: color .2s; }
+  footer .links a:hover { color: white; }
+  footer .credits { font-size: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-up { animation: fadeUp .6s ease both; }
+  .delay-1 { animation-delay: .1s; }
+  .delay-2 { animation-delay: .2s; }
+  .delay-3 { animation-delay: .3s; }
+
+  /* ROC chart */
+  .roc-container {
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .roc-title { font-size: 13px; font-weight: 600; color: var(--ink-3); margin-bottom: 16px; }
+
+  @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 90px; }
+    .problem-grid, .model-cards, .stack-grid { grid-template-columns: 1fr 1fr; }
+    .results-grid, .api-demo, .decision-cards, .dataset-grid { grid-template-columns: 1fr; }
+    .pipeline { padding-bottom: 12px; }
+    nav .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">credit-risk-ml/</a>
+  <ul class="nav-links">
+    <li><a href="#problema">Problema</a></li>
+    <li><a href="#arquitetura">Arquitetura</a></li>
+    <li><a href="#modelo">Modelo</a></li>
+    <li><a href="#resultados">Resultados</a></li>
+    <li><a href="#api">API</a></li>
+  </ul>
+  <span class="nav-badge">ROC-AUC 0.83</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="fade-up">
+    <div class="hero-tag">Projeto de Machine Learning</div>
+    <h1>Devo aprovar<br>crédito para <em>esse cliente?</em></h1>
+    <p class="hero-desc">
+      Modelo de classificação treinado com 150.000 registros históricos reais para prever inadimplência e automatizar decisões de crédito ao consumidor.
+    </p>
+    <div class="hero-buttons">
+      <a href="https://github.com/wesleybatistaluz/credit-risk-ml" class="btn btn-primary" target="_blank">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        Ver no GitHub
+      </a>
+      <a href="#api" class="btn btn-outline">Ver a API →</a>
+    </div>
+  </div>
+
+  <div class="hero-stats fade-up delay-2">
+    <div class="stat-card accent-green">
+      <div class="stat-label">ROC-AUC</div>
+      <div class="stat-value">0.83</div>
+      <div class="stat-sub">cross-validation (5 folds)</div>
+    </div>
+    <div class="stat-card accent-blue">
+      <div class="stat-label">Registros</div>
+      <div class="stat-value">150k</div>
+      <div class="stat-sub">dados históricos reais</div>
+    </div>
+    <div class="stat-card accent-amber">
+      <div class="stat-label">Desbalanceamento</div>
+      <div class="stat-value">14:1</div>
+      <div class="stat-sub">adimplentes vs inadimplentes</div>
+    </div>
+    <div class="stat-card accent-red">
+      <div class="stat-label">Latência API</div>
+      <div class="stat-value">&lt;50ms</div>
+      <div class="stat-sub">resposta por predição</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- PROBLEMA -->
+<section id="problema">
+  <div class="section-label">01 — O Problema</div>
+  <h2>Por que um modelo de crédito?</h2>
+  <p class="section-desc">
+    Instituições financeiras enfrentam o desafio de avaliar risco de crédito de forma rápida e consistente. 
+    Decisões manuais são lentas, inconsistentes e suscetíveis a viés.
+  </p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="problem-icon">⚖️</div>
+      <h3>Dados desbalanceados</h3>
+      <p>Apenas 6.6% dos clientes são inadimplentes. Modelos comuns ignoram a minoria e erram onde mais importa — na detecção do risco.</p>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">📊</div>
+      <h3>Muitas variáveis correlacionadas</h3>
+      <p>Histórico de atrasos, renda, dependentes e uso do crédito interagem de forma não-linear. Regressão logística simples não captura isso.</p>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">🚀</div>
+      <h3>Decisão em tempo real</h3>
+      <p>O modelo precisa retornar uma decisão em milissegundos via API REST, consumível por qualquer sistema de crédito.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ARQUITETURA -->
+<section id="arquitetura">
+  <div class="section-label">02 — Arquitetura</div>
+  <h2>Pipeline completo de ML</h2>
+  <p class="section-desc">Cada etapa é um módulo Python independente, testável e reutilizável.</p>
+
+  <div class="arch-flow">
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="step-icon">📂</div>
+        <div class="step-name">Dados Brutos</div>
+        <div class="step-file">cs-training.csv</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">🔧</div>
+        <div class="step-name">Pré-processamento</div>
+        <div class="step-file">preprocess.py</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">⚙️</div>
+        <div class="step-name">Feature Engineering</div>
+        <div class="step-file">feature_engineering.py</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">🤖</div>
+        <div class="step-name">XGBoost + SMOTE</div>
+        <div class="step-file">train.py</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">📈</div>
+        <div class="step-name">Avaliação</div>
+        <div class="step-file">evaluate.py</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">🌐</div>
+        <div class="step-name">API Flask</div>
+        <div class="step-file">app.py</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 40px;">
+    <p class="section-label" style="margin-bottom: 16px;">Estrutura de pastas</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>📁 credit-risk-ml/</span>
+      </div>
+      <div class="code-body">
+<span class="c-comment">├── data/</span>
+<span class="c-comment">│   ├── raw/                   <span class="c-comment"># Dataset original do Kaggle</span></span>
+<span class="c-comment">│   └── processed/             <span class="c-comment"># Dados limpos e features geradas</span></span>
+<span class="c-comment">│</span>
+<span class="c-key">├── src/</span>
+<span class="c-key">│   ├── data/preprocess.py     </span><span class="c-comment"># Limpeza: outliers, missing values</span>
+<span class="c-key">│   ├── features/</span>
+<span class="c-key">│   │   └── feature_engineering.py  </span><span class="c-comment"># +5 features derivadas</span>
+<span class="c-key">│   ├── models/</span>
+<span class="c-key">│   │   ├── train.py           </span><span class="c-comment"># Pipeline: SMOTE → Scaler → XGBoost</span>
+<span class="c-key">│   │   └── evaluate.py        </span><span class="c-comment"># ROC-AUC, confusão, feature importance</span>
+<span class="c-key">│   └── api/app.py             </span><span class="c-comment"># REST API com Flask</span>
+<span class="c-comment">│</span>
+<span class="c-var">├── notebooks/01_eda.ipynb     </span><span class="c-comment"># Análise Exploratória de Dados</span>
+<span class="c-var">├── models/model.pkl           </span><span class="c-comment"># Modelo serializado (joblib)</span>
+<span class="c-var">├── run.py                     </span><span class="c-comment"># Executa pipeline completo</span>
+<span class="c-var">└── requirements.txt</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- DATASET -->
+<section id="dataset">
+  <div class="section-label">03 — Dataset</div>
+  <h2>Give Me Some Credit — Kaggle</h2>
+  <p class="section-desc">Dataset real de crédito ao consumidor com 150.000 registros históricos e 10 variáveis preditoras.</p>
+
+  <div class="dataset-grid">
+    <div>
+      <table class="feature-table" style="background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow);">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Descrição</th>
+            <th>Tipo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>revolving_utilization</td><td>Uso do crédito rotativo (0-1)</td><td><span class="badge badge-blue">float</span></td></tr>
+          <tr><td>age</td><td>Idade do cliente</td><td><span class="badge badge-blue">int</span></td></tr>
+          <tr><td>times_30_59_days_late</td><td>Atrasos 30-59 dias</td><td><span class="badge badge-blue">int</span></td></tr>
+          <tr><td>debt_ratio</td><td>Razão dívida/renda</td><td><span class="badge badge-blue">float</span></td></tr>
+          <tr><td>monthly_income</td><td>Renda mensal</td><td><span class="badge badge-amber">c/ null</span></td></tr>
+          <tr><td>open_credit_lines</td><td>Linhas de crédito abertas</td><td><span class="badge badge-blue">int</span></td></tr>
+          <tr><td>times_90_days_late</td><td>Atrasos 90+ dias</td><td><span class="badge badge-blue">int</span></td></tr>
+          <tr><td>real_estate_loans</td><td>Financiamentos imobiliários</td><td><span class="badge badge-blue">int</span></td></tr>
+          <tr><td>dependents</td><td>Nº de dependentes</td><td><span class="badge badge-amber">c/ null</span></td></tr>
+          <tr><td><strong>target</strong></td><td><strong>Inadimplência em 2 anos</strong></td><td><span class="badge badge-green">0 / 1</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: var(--shadow);">
+        <p style="font-size: 13px; font-weight: 600; color: var(--ink-3); margin-bottom: 16px;">DISTRIBUIÇÃO DAS CLASSES</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 12px; height: 12px; background: var(--green); border-radius: 3px;"></div>
+          <span style="font-size: 14px; flex: 1;">Adimplentes</span>
+          <span style="font-family: var(--mono); font-size: 14px; font-weight: 500;">139.517 <span style="color: var(--ink-4); font-size: 12px;">(93.4%)</span></span>
+        </div>
+        <div style="background: var(--surface-2); border-radius: 6px; height: 8px; margin-bottom: 16px;">
+          <div style="background: var(--green); width: 93.4%; height: 100%; border-radius: 6px;"></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 12px; height: 12px; background: var(--red); border-radius: 3px;"></div>
+          <span style="font-size: 14px; flex: 1;">Inadimplentes</span>
+          <span style="font-family: var(--mono); font-size: 14px; font-weight: 500;">9.869 <span style="color: var(--ink-4); font-size: 12px;">(6.6%)</span></span>
+        </div>
+        <div style="background: var(--surface-2); border-radius: 6px; height: 8px; margin-bottom: 4px;">
+          <div style="background: var(--red); width: 6.6%; height: 100%; border-radius: 6px;"></div>
+        </div>
+        <p style="font-size: 12px; color: var(--ink-4); margin-top: 12px;">⚠️ Razão de desbalanceamento 14:1 → resolvido com SMOTE</p>
+      </div>
+
+      <div style="background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: var(--shadow);">
+        <p style="font-size: 13px; font-weight: 600; color: var(--ink-3); margin-bottom: 16px;">FEATURES DERIVADAS (CRIADAS)</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; gap: 10px; align-items: baseline;">
+            <span class="badge badge-green">novo</span>
+            <span style="font-size: 13px;"><code style="font-family: var(--mono); font-size: 12px; color: var(--ink);">total_late_payments</code> — soma de todos os atrasos</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: baseline;">
+            <span class="badge badge-green">novo</span>
+            <span style="font-size: 13px;"><code style="font-family: var(--mono); font-size: 12px; color: var(--ink);">income_per_dependent</code> — renda por dependente</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: baseline;">
+            <span class="badge badge-green">novo</span>
+            <span style="font-size: 13px;"><code style="font-family: var(--mono); font-size: 12px; color: var(--ink);">high_revolving_use</code> — flag uso &gt; 75%</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: baseline;">
+            <span class="badge badge-green">novo</span>
+            <span style="font-size: 13px;"><code style="font-family: var(--mono); font-size: 12px; color: var(--ink);">had_severe_delinquency</code> — flag 90+ dias</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: baseline;">
+            <span class="badge badge-green">novo</span>
+            <span style="font-size: 13px;"><code style="font-family: var(--mono); font-size: 12px; color: var(--ink);">log_monthly_income</code> — normaliza skewness</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- MODELO -->
+<section id="modelo">
+  <div class="section-label">04 — Modelagem</div>
+  <h2>XGBoost + SMOTE</h2>
+  <p class="section-desc">Combinação de técnicas para lidar com o desbalanceamento e capturar padrões não-lineares nos dados.</p>
+
+  <div class="model-cards">
+    <div class="model-card">
+      <h3>🌲 XGBoost</h3>
+      <p>Gradient boosting baseado em árvores de decisão. Captura interações não-lineares entre variáveis sem necessidade de normalização manual.</p>
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <p style="font-size: 12px; color: var(--ink-3);">Hiperparâmetros</p>
+        <p class="highlight">n_estimators=300</p>
+        <p class="highlight">learning_rate=0.05</p>
+        <p class="highlight">max_depth=5</p>
+      </div>
+    </div>
+    <div class="model-card">
+      <h3>⚖️ SMOTE</h3>
+      <p>Synthetic Minority Oversampling Technique. Gera exemplos sintéticos da classe minoritária (inadimplentes) para balancear o treino.</p>
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <p style="font-size: 12px; color: var(--ink-3);">Por que não peso de classe?</p>
+        <p style="font-size: 13px; color: var(--ink-2);">SMOTE cria vizinhos interpolados no espaço de features — gera representações mais ricas da minoria que simples oversampling.</p>
+      </div>
+    </div>
+    <div class="model-card">
+      <h3>🔄 Cross-Validation</h3>
+      <p>Stratified K-Fold com 5 folds garante que cada fold mantém a proporção de classes originais, evitando vazamento de dados.</p>
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <p style="font-size: 12px; color: var(--ink-3);">Resultado</p>
+        <p class="highlight">ROC-AUC 0.8277</p>
+        <p class="highlight">± 0.0059 (estável)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top: 32px;">
+    <div class="code-header">
+      <span>src/models/train.py — Pipeline Principal</span>
+    </div>
+    <div class="code-body">
+<span class="c-var">pipeline</span> = <span class="c-fn">ImbPipeline</span>([
+    (<span class="c-string">"smote"</span>,  <span class="c-fn">SMOTE</span>(random_state=<span class="c-num">42</span>)),
+    (<span class="c-string">"scaler"</span>, <span class="c-fn">StandardScaler</span>()),
+    (<span class="c-string">"model"</span>,  <span class="c-fn">XGBClassifier</span>(
+        n_estimators=<span class="c-num">300</span>,
+        max_depth=<span class="c-num">5</span>,
+        learning_rate=<span class="c-num">0.05</span>,
+        subsample=<span class="c-num">0.8</span>,
+        colsample_bytree=<span class="c-num">0.8</span>,
+    ))
+])
+
+<span class="c-comment"># Cross-validation estratificado</span>
+<span class="c-var">scores</span> = <span class="c-fn">cross_val_score</span>(
+    pipeline, X_train, y_train,
+    cv=<span class="c-fn">StratifiedKFold</span>(n_splits=<span class="c-num">5</span>),
+    scoring=<span class="c-string">"roc_auc"</span>
+)
+<span class="c-comment"># ROC-AUC médio: 0.8277 ± 0.0059</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- RESULTADOS -->
+<section id="resultados">
+  <div class="section-label">05 — Resultados</div>
+  <h2>Avaliação no conjunto de teste</h2>
+  <p class="section-desc">20% dos dados (29.878 registros) foram separados antes do treino e nunca vistos pelo modelo.</p>
+
+  <div class="results-grid">
+    <div class="metrics-list">
+      <div class="metric-row">
+        <span class="metric-name">ROC-AUC</span>
+        <span class="metric-val good">0.8229</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Avg. Precision</span>
+        <span class="metric-val mid">0.3044</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Acurácia geral</span>
+        <span class="metric-val good">88%</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Recall (inadimp.)</span>
+        <span class="metric-val mid">50%</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">Precision (inadimp.)</span>
+        <span class="metric-val mid">27%</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-name">F1 (inadimp.)</span>
+        <span class="metric-val mid">0.35</span>
+      </div>
+    </div>
+
+    <div class="cm-container">
+      <p class="cm-title">Matriz de Confusão — Conjunto de Teste (29.878 registros)</p>
+      <table class="cm-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Predito: Adimplente</th>
+            <th>Predito: Inadimplente</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th style="font-size:11px; color: var(--ink-4); padding: 4px; text-align: right;">Real: Adimplente</th>
+            <td class="cm-cell tn">
+              <div class="count">25.090</div>
+              <div class="pct">89.9%</div>
+            </td>
+            <td class="cm-cell fp">
+              <div class="count">2.814</div>
+              <div class="pct">10.1%</div>
+            </td>
+          </tr>
+          <tr>
+            <th style="font-size:11px; color: var(--ink-4); padding: 4px; text-align: right;">Real: Inadimplente</th>
+            <td class="cm-cell fn">
+              <div class="count">987</div>
+              <div class="pct">50%</div>
+            </td>
+            <td class="cm-cell tp">
+              <div class="count">987</div>
+              <div class="pct">50%</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size: 12px; color: var(--ink-4); text-align: center; margin-top: 16px;">
+        ✅ Verde = acertos &nbsp;|&nbsp; 🟡 Falso positivo = custo de oportunidade &nbsp;|&nbsp; 🔴 Falso negativo = prejuízo
+      </p>
+    </div>
+  </div>
+
+  <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 20px 24px; margin-top: 24px;">
+    <p style="font-size: 14px; color: #92400e;">
+      <strong>📌 Nota sobre o Recall:</strong> Com 50% de recall nos inadimplentes, o modelo detecta metade dos casos de risco.
+      Em contextos reais, o threshold de decisão (atualmente 0.5) pode ser ajustado para priorizar recall (menos inadimplentes passam),
+      aceitando mais falsos positivos como trade-off — uma decisão de negócio, não técnica.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- API -->
+<section id="api">
+  <div class="section-label">06 — API REST</div>
+  <h2>Integração em qualquer sistema</h2>
+  <p class="section-desc">A API Flask expõe o modelo via HTTP. Envie os dados do cliente em JSON e receba a decisão em &lt;50ms.</p>
+
+  <div class="api-demo">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span style="font-family: var(--mono); font-size: 11px; color: #6b7db3; margin-left: 8px;">POST /predict</span>
+      </div>
+      <div class="terminal-content">
+        <span class="t-muted">$</span> <span class="t-green">curl</span> <span class="t-yellow">-X POST</span> <span class="t-white">http://localhost:5000/predict</span><br>
+        <span class="t-muted">  -H</span> <span class="t-blue">"Content-Type: application/json"</span><br>
+        <span class="t-muted">  -d</span> <span class="t-blue">{</span><br>
+        <span class="t-muted">    </span><span class="t-blue">"revolving_utilization"</span>: <span class="t-yellow">0.95</span>,<br>
+        <span class="t-muted">    </span><span class="t-blue">"age"</span>: <span class="t-yellow">28</span>,<br>
+        <span class="t-muted">    </span><span class="t-blue">"times_90_days_late"</span>: <span class="t-yellow">2</span>,<br>
+        <span class="t-muted">    </span><span class="t-blue">"monthly_income"</span>: <span class="t-yellow">2000</span>,<br>
+        <span class="t-muted">    </span><span class="t-blue">"debt_ratio"</span>: <span class="t-yellow">0.85</span>,<br>
+        <span class="t-muted">    </span><span class="t-blue">...</span><br>
+        <span class="t-blue">  }</span><br>
+        <br>
+        <span class="t-muted"># Resultado:</span>
+      </div>
+    </div>
+
+    <div class="response-card">
+      <div class="response-header">
+        <span>localhost:5000/predict</span>
+        <div class="status-pill status-200">
+          <span class="status-dot"></span>
+          200 OK
+        </div>
+      </div>
+      <div class="response-body">
+        <div class="json-line">{</div>
+        <div class="json-line">&nbsp;&nbsp;<span class="json-key">"decision"</span>: <span class="json-str">"NEGAR"</span>,</div>
+        <div class="json-line">&nbsp;&nbsp;<span class="json-key">"probability_of_default"</span>: <span class="json-num">0.8524</span>,</div>
+        <div class="json-line">&nbsp;&nbsp;<span class="json-key">"probability_of_default_pct"</span>: <span class="json-str">"85.2%"</span>,</div>
+        <div class="json-line">&nbsp;&nbsp;<span class="json-key">"risk_level"</span>: <span class="json-str">"MUITO ALTO"</span>,</div>
+        <div class="json-line">&nbsp;&nbsp;<span class="json-key">"risk_emoji"</span>: <span class="json-str">"❌"</span>,</div>
+        <div class="json-line">&nbsp;&nbsp;<span class="json-key">"threshold_used"</span>: <span class="json-num">0.5</span>,</div>
+        <div class="json-line">&nbsp;&nbsp;<span class="json-key">"message"</span>: <span class="json-str">"Crédito NEGADO ❌ — 85.2%"</span></div>
+        <div class="json-line">}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="decision-cards">
+    <div class="decision-card approve">
+      <div class="decision-icon">✅</div>
+      <div>
+        <div class="decision-label">Aprovado</div>
+        <div class="decision-value">prob &lt; 50%</div>
+        <div style="font-size: 13px; color: var(--green); margin-top: 4px;">Risco baixo / médio</div>
+      </div>
+    </div>
+    <div class="decision-card deny">
+      <div class="decision-icon">❌</div>
+      <div>
+        <div class="decision-label">Negado</div>
+        <div class="decision-value">prob ≥ 50%</div>
+        <div style="font-size: 13px; color: var(--red); margin-top: 4px;">Risco alto / muito alto</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
+    <p style="font-size: 13px; font-weight: 600; color: var(--ink-3); margin-bottom: 12px;">ENDPOINTS DISPONÍVEIS</p>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <span style="font-family: var(--mono); font-size: 11px; background: var(--green-light); color: var(--green); padding: 3px 8px; border-radius: 4px; font-weight: 600;">GET</span>
+        <span style="font-family: var(--mono); font-size: 13px; color: var(--ink);">/</span>
+        <span style="font-size: 13px; color: var(--ink-3);">Status da API</span>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <span style="font-family: var(--mono); font-size: 11px; background: #eff6ff; color: #2563eb; padding: 3px 8px; border-radius: 4px; font-weight: 600;">POST</span>
+        <span style="font-family: var(--mono); font-size: 13px; color: var(--ink);">/predict</span>
+        <span style="font-size: 13px; color: var(--ink-3);">Realiza predição de inadimplência</span>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <span style="font-family: var(--mono); font-size: 11px; background: var(--green-light); color: var(--green); padding: 3px 8px; border-radius: 4px; font-weight: 600;">GET</span>
+        <span style="font-family: var(--mono); font-size: 13px; color: var(--ink);">/example</span>
+        <span style="font-size: 13px; color: var(--ink-3);">Exemplo de payload + curl</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- STACK -->
+<section>
+  <div class="section-label">07 — Stack Tecnológico</div>
+  <h2>Ferramentas utilizadas</h2>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-icon">🐍</div>
+      <div class="stack-name">Python 3.10+</div>
+      <div class="stack-desc">Linguagem principal</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🌲</div>
+      <div class="stack-name">XGBoost</div>
+      <div class="stack-desc">Gradient Boosting</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">⚖️</div>
+      <div class="stack-name">imbalanced-learn</div>
+      <div class="stack-desc">SMOTE oversampling</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🔬</div>
+      <div class="stack-name">scikit-learn</div>
+      <div class="stack-desc">Pipeline + métricas</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🐼</div>
+      <div class="stack-name">pandas / numpy</div>
+      <div class="stack-desc">Manipulação de dados</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">📊</div>
+      <div class="stack-name">matplotlib / seaborn</div>
+      <div class="stack-desc">Visualizações</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🌐</div>
+      <div class="stack-name">Flask</div>
+      <div class="stack-desc">REST API</div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">📓</div>
+      <div class="stack-name">Jupyter</div>
+      <div class="stack-desc">EDA interativa</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p class="name">Wesley Batista</p>
+  <p style="font-size: 15px; color: rgba(255,255,255,0.5);">Data Scientist & ML Engineer</p>
+  <div class="links">
+    <a href="https://github.com/wesleybatistaluz" target="_blank">GitHub</a>
+    <a href="https://linkedin.com/in/wesleybatistaluz" target="_blank">LinkedIn</a>
+    <a href="mailto:wesleybatistaluz@email.com">Email</a>
+  </div>
+  <div class="credits">
+    Projeto desenvolvido com Python + XGBoost · Dataset: Give Me Some Credit (Kaggle) · 2024
+  </div>
+</footer>
+
+</body>
+</html>

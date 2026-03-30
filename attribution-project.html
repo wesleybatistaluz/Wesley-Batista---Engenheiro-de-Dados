@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Projeto · Plataforma de Atribuição de Mídia · Wesley Batista Luz</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#06090d;
+  --bg2:#0a0f15;
+  --bg3:#0f1520;
+  --surface:#111a24;
+  --surface2:#162030;
+  --accent:#00d9c0;
+  --accent2:#6366f1;
+  --accent3:#f59e0b;
+  --accent4:#ec4899;
+  --text:#dde6f0;
+  --muted:#4a6070;
+  --border:rgba(0,217,192,0.1);
+  --mono:'Space Mono',monospace;
+  --sans:'Syne',sans-serif;
+  --body:'DM Sans',sans-serif;
+}
+
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--body);overflow-x:hidden;cursor:none}
+
+/* cursor */
+.cur{position:fixed;width:10px;height:10px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:difference;transition:width .15s,height .15s}
+.cur-r{position:fixed;width:32px;height:32px;border:1px solid var(--accent);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:.4;transition:transform .2s ease,width .2s,height .2s}
+
+/* grid bg */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,217,192,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,217,192,.025) 1px,transparent 1px);background-size:56px 56px;z-index:0;pointer-events:none}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:1rem 3rem;background:rgba(6,9,13,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-back{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-decoration:none;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:.6rem;transition:color .2s;cursor:none}
+.nav-back:hover{color:var(--accent)}
+.nav-title{font-family:var(--mono);font-size:.7rem;color:var(--muted);letter-spacing:.08em}
+.nav-tag{font-family:var(--mono);font-size:.6rem;padding:.25rem .75rem;border:1px solid rgba(0,217,192,.3);color:var(--accent);border-radius:2px;letter-spacing:.1em;text-transform:uppercase}
+
+/* DISCLAIMER BANNER */
+.disclaimer{position:relative;z-index:10;margin:5.5rem 3rem 0;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:1rem 1.5rem;display:flex;align-items:flex-start;gap:1rem}
+.disc-icon{font-size:1.2rem;flex-shrink:0;margin-top:.1rem}
+.disc-text{font-family:var(--mono);font-size:.72rem;color:rgba(245,158,11,.85);line-height:1.7;letter-spacing:.02em}
+.disc-text strong{color:var(--accent3)}
+
+/* HERO */
+.hero{position:relative;z-index:1;padding:3rem 3rem 4rem;max-width:1400px;margin:0 auto}
+.hero-tag{font-family:var(--mono);font-size:.65rem;color:var(--accent);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem}
+.hero-tag::before{content:'';display:inline-block;width:24px;height:1px;background:var(--accent)}
+.hero-title{font-family:var(--sans);font-size:clamp(2.2rem,5vw,4rem);font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-bottom:1.25rem}
+.hero-title em{font-style:normal;color:var(--accent)}
+.hero-desc{font-family:var(--body);font-size:1rem;color:var(--muted);max-width:680px;line-height:1.8;margin-bottom:2.5rem}
+.hero-meta{display:flex;flex-wrap:wrap;gap:.75rem}
+.meta-chip{font-family:var(--mono);font-size:.62rem;padding:.3rem .85rem;border:1px solid var(--border);border-radius:2px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.meta-chip.accent{border-color:rgba(0,217,192,.3);color:var(--accent);background:rgba(0,217,192,.04)}
+
+/* SECTIONS */
+section{position:relative;z-index:1}
+.container{max-width:1400px;margin:0 auto;padding:0 3rem}
+.section-pad{padding:5rem 0}
+
+.sec-label{font-family:var(--mono);font-size:.62rem;color:var(--accent);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem}
+.sec-label::before{content:'';display:inline-block;width:16px;height:1px;background:var(--accent)}
+.sec-title{font-family:var(--sans);font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:1rem}
+.sec-title span{color:var(--accent)}
+.sec-desc{font-family:var(--body);font-size:.95rem;color:var(--muted);line-height:1.8;max-width:680px;margin-bottom:3rem}
+
+/* OVERVIEW CARDS */
+.overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:3rem}
+.ov-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.5rem;transition:border-color .2s,transform .2s}
+.ov-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.ov-card-icon{font-size:1.5rem;margin-bottom:1rem}
+.ov-card-val{font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--accent);display:block;line-height:1;margin-bottom:.3rem}
+.ov-card-label{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem}
+.ov-card-desc{font-size:.8rem;color:var(--muted);line-height:1.6}
+
+/* TECH STACK */
+.stack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.stack-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.5rem;transition:border-color .2s}
+.stack-card:hover{border-color:var(--accent2)}
+.stack-card-cat{font-family:var(--mono);font-size:.6rem;color:var(--accent2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.75rem}
+.stack-card-title{font-family:var(--sans);font-size:1rem;font-weight:700;margin-bottom:.5rem}
+.stack-card-desc{font-size:.82rem;color:var(--muted);line-height:1.65;margin-bottom:1rem}
+.stack-tags{display:flex;flex-wrap:wrap;gap:.35rem}
+.st{font-family:var(--mono);font-size:.58rem;padding:.2rem .6rem;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2);color:#818cf8;border-radius:2px;letter-spacing:.05em}
+
+/* ARCHITECTURE */
+.arch-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.5rem;margin-bottom:2rem;overflow-x:auto}
+.arch-flow{display:flex;align-items:center;gap:0;flex-wrap:nowrap;min-width:700px}
+.arch-step{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:1.25rem 1rem;text-align:center;position:relative;transition:border-color .2s,background .2s}
+.arch-step:hover{border-color:var(--accent);background:rgba(0,217,192,.04)}
+.arch-step-num{font-family:var(--mono);font-size:.58rem;color:var(--accent);letter-spacing:.15em;margin-bottom:.4rem}
+.arch-step-title{font-family:var(--sans);font-size:.85rem;font-weight:700;margin-bottom:.3rem;line-height:1.2}
+.arch-step-sub{font-size:.7rem;color:var(--muted);line-height:1.4}
+.arch-arrow{color:var(--accent);font-size:1.2rem;padding:0 .5rem;flex-shrink:0;opacity:.5}
+.arch-step.highlight{border-color:rgba(0,217,192,.35);background:rgba(0,217,192,.05)}
+
+/* DASHBOARDS GALLERY */
+.products-nav{display:flex;gap:.5rem;margin-bottom:2.5rem;flex-wrap:wrap}
+.prod-btn{font-family:var(--mono);font-size:.65rem;padding:.5rem 1.25rem;border:1px solid var(--border);border-radius:2px;background:transparent;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;cursor:none;transition:all .2s}
+.prod-btn.active,.prod-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,217,192,.05)}
+
+.dashboard-wrapper{display:none}
+.dashboard-wrapper.active{display:block}
+
+/* MOCK DASHBOARD */
+.mock-dash{background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.mock-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface)}
+.mock-header-left h3{font-family:var(--sans);font-size:1rem;font-weight:700;margin-bottom:.15rem}
+.mock-header-left p{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.08em}
+.mock-header-badge{font-family:var(--mono);font-size:.58rem;padding:.25rem .75rem;background:rgba(0,217,192,.08);border:1px solid rgba(0,217,192,.2);color:var(--accent);border-radius:2px;letter-spacing:.08em}
+.mock-attribution-tabs{display:flex;gap:0;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface)}
+.attr-tab{font-family:var(--mono);font-size:.65rem;padding:.4rem 1rem;letter-spacing:.08em;border-radius:2px;cursor:none}
+.attr-tab.last-click{background:rgba(0,217,192,.1);border:1px solid rgba(0,217,192,.25);color:var(--accent)}
+.attr-tab.markov{background:transparent;border:1px solid transparent;color:var(--muted);margin-left:.5rem}
+
+/* KPI BAR */
+.kpi-bar{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.kpi{background:var(--surface2);padding:1rem 1.25rem}
+.kpi-label{font-family:var(--mono);font-size:.55rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem}
+.kpi-val{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);display:flex;align-items:baseline;gap:.3rem}
+.kpi-delta{font-size:.6rem;color:#34d399}
+.kpi-delta.neg{color:#f87171}
+
+/* DASHBOARD BODY */
+.dash-body{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.dash-panel{background:var(--surface2);padding:1.25rem 1.5rem}
+.dash-panel.full{grid-column:span 2}
+.dash-panel.triple{grid-column:span 2;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;padding:0;background:var(--border)}
+.panel-inner{background:var(--surface2);padding:1.25rem 1.5rem}
+.panel-title{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.panel-title::before{content:'';width:3px;height:12px;background:var(--accent);border-radius:1px;flex-shrink:0}
+
+/* DONUT CHART (CSS) */
+.donut-wrap{display:flex;align-items:center;gap:2rem}
+.donut{width:100px;height:100px;border-radius:50%;flex-shrink:0}
+.donut-legend{flex:1}
+.legend-item{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-label{font-family:var(--mono);font-size:.62rem;color:var(--muted);flex:1}
+.legend-val{font-family:var(--mono);font-size:.62rem;color:var(--text)}
+
+/* BAR CHARTS */
+.bar-chart{display:flex;flex-direction:column;gap:.5rem}
+.bar-row{display:flex;align-items:center;gap:.75rem}
+.bar-name{font-family:var(--mono);font-size:.6rem;color:var(--muted);width:90px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+.bar-val{font-family:var(--mono);font-size:.6rem;color:var(--muted);width:50px;text-align:right;flex-shrink:0}
+
+/* SPARKLINE SVG */
+.sparkline-wrap{width:100%;height:80px;position:relative}
+.sparkline-wrap svg{width:100%;height:100%}
+
+/* TABLE */
+.mock-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.62rem}
+.mock-table th{padding:.5rem .75rem;text-align:left;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface);font-weight:400}
+.mock-table td{padding:.5rem .75rem;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text)}
+.mock-table tr:last-child td{font-weight:700;color:var(--accent);border-top:1px solid var(--border)}
+.mock-table td.positive{color:#34d399}
+.mock-table td.dim{color:var(--muted)}
+
+/* METRICS GRID */
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+.met{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:4px;padding:.85rem 1rem}
+.met-val{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--accent);display:block;line-height:1;margin-bottom:.25rem}
+.met-val.purple{color:#a78bfa}
+.met-val.amber{color:var(--accent3)}
+.met-val.pink{color:var(--accent4)}
+.met-label{font-family:var(--mono);font-size:.55rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+
+/* INSIGHTS */
+.insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.insight-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.5rem;transition:border-color .2s,transform .2s}
+.insight-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.ins-icon{font-size:1.5rem;margin-bottom:.75rem}
+.ins-title{font-family:var(--sans);font-size:.95rem;font-weight:700;margin-bottom:.5rem}
+.ins-text{font-size:.82rem;color:var(--muted);line-height:1.65}
+.ins-highlight{color:var(--accent);font-weight:600}
+
+/* MARKOV SECTION */
+.markov-box{background:var(--surface);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:2rem;margin-bottom:2rem}
+.markov-title{font-family:var(--sans);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;color:#a78bfa}
+.markov-desc{font-size:.88rem;color:var(--muted);line-height:1.75;margin-bottom:1.5rem}
+.markov-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.markov-step{background:var(--bg3);border:1px solid rgba(99,102,241,.15);border-radius:4px;padding:1rem}
+.ms-num{font-family:var(--mono);font-size:.6rem;color:#818cf8;letter-spacing:.12em;margin-bottom:.4rem}
+.ms-title{font-family:var(--sans);font-size:.85rem;font-weight:700;margin-bottom:.3rem}
+.ms-desc{font-size:.75rem;color:var(--muted);line-height:1.5}
+
+/* RESULTS */
+.results-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.5rem;text-align:center;transition:border-color .2s}
+.result-card:hover{border-color:var(--accent)}
+.result-num{font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--accent);display:block;margin-bottom:.25rem}
+.result-num.purple{color:#a78bfa}
+.result-num.amber{color:var(--accent3)}
+.result-label{font-family:var(--sans);font-size:.85rem;font-weight:600;margin-bottom:.4rem}
+.result-sub{font-size:.75rem;color:var(--muted);line-height:1.5}
+
+/* FADE IN */
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* FOOTER NAV */
+.proj-footer{background:var(--bg2);border-top:1px solid var(--border);padding:3rem;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+.pf-back{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-decoration:none;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:.5rem;transition:color .2s;cursor:none}
+.pf-back:hover{color:var(--accent)}
+.pf-info{text-align:right}
+.pf-info p{font-family:var(--mono);font-size:.62rem;color:var(--muted)}
+.pf-info span{color:var(--accent)}
+
+/* Divider */
+.divider{border:none;border-top:1px solid var(--border);margin:0}
+
+@media(max-width:900px){
+  nav{padding:1rem 1.5rem}
+  .disclaimer,.hero,.container{padding-left:1.5rem;padding-right:1.5rem}
+  .overview-grid{grid-template-columns:1fr 1fr}
+  .stack-grid{grid-template-columns:1fr}
+  .arch-flow{min-width:600px}
+  .insights-grid,.results-row,.markov-steps{grid-template-columns:1fr}
+  .kpi-bar{grid-template-columns:repeat(4,1fr)}
+  .dash-body{grid-template-columns:1fr}
+  .dash-panel.full,.dash-panel.triple{grid-column:span 1}
+  .dash-panel.triple{grid-template-columns:1fr}
+  .proj-footer{flex-direction:column;gap:1.5rem;text-align:center}
+  .pf-info{text-align:center}
+}
+</style>
+</head>
+<body>
+
+<div class="cur" id="cur"></div>
+<div class="cur-r" id="curR"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="portfolio.html" class="nav-back">← Voltar ao Portfólio</a>
+  <span class="nav-title">// projeto_atribuicao.py</span>
+  <span class="nav-tag">Case Study</span>
+</nav>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  <div class="disc-icon">⚠</div>
+  <div class="disc-text">
+    <strong>AVISO SOBRE DADOS:</strong> Todos os números, métricas, volumes e valores exibidos nesta página são <strong>completamente fictícios e foram substituídos por dados genéricos</strong> para fins de apresentação de portfólio. Logotipos, nomes de empresas e quaisquer elementos de identidade visual das organizações envolvidas foram removidos. O único objetivo desta publicação é demonstrar metodologia, arquitetura técnica e capacidade analítica. Nenhum dado real, proprietário ou confidencial é divulgado aqui.
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero fade-in">
+  <div class="hero-tag">Analytics Engineering · Atribuição de Mídia</div>
+  <h1 class="hero-title">Plataforma de <em>Atribuição</em><br/>de Mídia para Banco Digital</h1>
+  <p class="hero-desc">
+    Desenvolvimento de uma suite completa de dashboards e algoritmos de atribuição de crédito de mídia para múltiplos produtos financeiros — cobrindo toda a jornada do cliente desde o primeiro clique até o contrato assinado, com modelos estatísticos de Cadeias de Markov.
+  </p>
+  <div class="hero-meta">
+    <span class="meta-chip accent">Analytics Engineering</span>
+    <span class="meta-chip accent">Markov Chains</span>
+    <span class="meta-chip">dbt</span>
+    <span class="meta-chip">Databricks</span>
+    <span class="meta-chip">Power BI</span>
+    <span class="meta-chip">BigQuery</span>
+    <span class="meta-chip">Airflow</span>
+    <span class="meta-chip">SQL</span>
+    <span class="meta-chip">Python</span>
+    <span class="meta-chip">2025 → 2026</span>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- OVERVIEW -->
+<section class="section-pad">
+  <div class="container">
+    <div class="sec-label">Visão Geral</div>
+    <h2 class="sec-title">O que foi <span>construído</span></h2>
+    <p class="sec-desc">Uma plataforma centralizada de atribuição de mídia abrangendo 4 produtos financeiros distintos, cada um com suas próprias jornadas de conversão, canais de aquisição e métricas de negócio.</p>
+
+    <div class="overview-grid fade-in">
+      <div class="ov-card">
+        <div class="ov-card-icon">🏦</div>
+        <span class="ov-card-val">4</span>
+        <div class="ov-card-label">Produtos cobertos</div>
+        <p class="ov-card-desc">Conta & Investimentos, Financiamento Solar, Financiamento de Veículos e Empréstimo com Garantia de Veículo.</p>
+      </div>
+      <div class="ov-card">
+        <div class="ov-card-icon">📊</div>
+        <span class="ov-card-val">12+</span>
+        <div class="ov-card-label">Dashboards entregues</div>
+        <p class="ov-card-desc">Visões gerais, funis de conversão, análise de safra de contratos e comparativos Last Click vs. Markov.</p>
+      </div>
+      <div class="ov-card">
+        <div class="ov-card-icon">⛓</div>
+        <span class="ov-card-val">2</span>
+        <div class="ov-card-label">Modelos de atribuição</div>
+        <p class="ov-card-desc">Last Click (baseline) e Atribuição Estatística por Cadeias de Markov, ambos acessíveis via toggle no dashboard.</p>
+      </div>
+      <div class="ov-card">
+        <div class="ov-card-icon">🔄</div>
+        <span class="ov-card-val">15+</span>
+        <div class="ov-card-label">Canais mapeados</div>
+        <p class="ov-card-desc">Mídia paga, orgânico, CRM, direto, derivação app-site, referral, parceiros e canais cross-sell.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- CONTEXT -->
+<section class="section-pad" style="background:var(--bg2)">
+  <div class="container">
+    <div class="sec-label">Contexto do Problema</div>
+    <h2 class="sec-title">O <span>desafio</span></h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start" class="fade-in">
+      <div>
+        <p style="font-size:.95rem;color:var(--muted);line-height:1.85;margin-bottom:1.25rem">
+          Em ambientes de marketing digital multi-canal, um cliente raramente converte no primeiro ponto de contato. Ele pode ver um anúncio no Google, visitar o site organicamente dias depois, receber um e-mail de CRM e só então converter por canal direto.
+        </p>
+        <p style="font-size:.95rem;color:var(--muted);line-height:1.85;margin-bottom:1.25rem">
+          O modelo tradicional de <strong style="color:var(--text)">Last Click</strong> atribui 100% do crédito ao último canal — ignorando todos os touchpoints anteriores que contribuíram para a decisão. Isso distorce a visão de ROI e pode levar ao sub-investimento em canais de awareness.
+        </p>
+        <p style="font-size:.95rem;color:var(--muted);line-height:1.85">
+          A solução foi construir uma plataforma que calculasse os dois modelos em paralelo, permitindo comparação direta e tomada de decisão mais informada sobre alocação de budget.
+        </p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div style="background:var(--surface);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:1.25rem">
+          <div style="font-family:var(--mono);font-size:.62rem;color:#f87171;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">// Problema</div>
+          <p style="font-size:.82rem;color:var(--muted);line-height:1.65">Dados de conversão espalhados em múltiplas fontes sem visão unificada da jornada do cliente. Dependência total de Last Click distorcia o ROI real de cada canal.</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid rgba(0,217,192,.15);border-radius:6px;padding:1.25rem">
+          <div style="font-family:var(--mono);font-size:.62rem;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">// Solução</div>
+          <p style="font-size:.82rem;color:var(--muted);line-height:1.65">Pipeline de dados centralizado com modelo Markov para redistribuição estatística de crédito entre canais, com dashboards comparativos por produto financeiro.</p>
+        </div>
+        <div style="background:var(--surface);border:1px solid rgba(99,102,241,.2);border-radius:6px;padding:1.25rem">
+          <div style="font-family:var(--mono);font-size:.62rem;color:#a78bfa;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">// Impacto</div>
+          <p style="font-size:.82rem;color:var(--muted);line-height:1.65">Redistribuição do budget de mídia baseada em dados, com evidência de canais subestimados no modelo Last Click. Visibilidade completa de toda a jornada de conversão.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ARQUITETURA -->
+<section class="section-pad">
+  <div class="container">
+    <div class="sec-label">Arquitetura Técnica</div>
+    <h2 class="sec-title">Como foi <span>construído</span></h2>
+    <p class="sec-desc">Pipeline de ponta a ponta: desde a ingestão de dados brutos de múltiplas fontes até a camada de visualização interativa.</p>
+
+    <div class="arch-box fade-in">
+      <div class="arch-flow">
+        <div class="arch-step">
+          <div class="arch-step-num">01</div>
+          <div class="arch-step-title">Ingestão</div>
+          <div class="arch-step-sub">APIs de mídia, CRM, App events, Web analytics</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+          <div class="arch-step-num">02</div>
+          <div class="arch-step-title">Raw Layer</div>
+          <div class="arch-step-sub">Databricks / BigQuery — dados brutos sem transformação</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+          <div class="arch-step-num">03</div>
+          <div class="arch-step-title">dbt Models</div>
+          <div class="arch-step-sub">Staging, Intermediate e Marts — linhagem de dados completa</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step highlight">
+          <div class="arch-step-num">04</div>
+          <div class="arch-step-title">Markov Engine</div>
+          <div class="arch-step-sub">Python: construção de grafo de transições e cálculo de remoção de canal</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+          <div class="arch-step-num">05</div>
+          <div class="arch-step-title">Orquestração</div>
+          <div class="arch-step-sub">Airflow DAGs — atualização diária das camadas</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+          <div class="arch-step-num">06</div>
+          <div class="arch-step-title">Power BI</div>
+          <div class="arch-step-sub">Dashboards interativos com toggle Last Click / Markov</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack-grid fade-in">
+      <div class="stack-card">
+        <div class="stack-card-cat">Transformação de Dados</div>
+        <div class="stack-card-title">dbt + SQL</div>
+        <div class="stack-card-desc">Modelagem em camadas com testes de qualidade, documentação automática e lineage graph. Modelos Staging → Intermediate → Mart para cada produto.</div>
+        <div class="stack-tags">
+          <span class="st">dbt Core</span><span class="st">BigQuery</span><span class="st">SQL</span><span class="st">dbt tests</span><span class="st">Jinja</span>
+        </div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-cat">Algoritmo de Atribuição</div>
+        <div class="stack-card-title">Cadeias de Markov</div>
+        <div class="stack-card-desc">Implementação do modelo de atribuição baseado em Markov com cálculo de "removal effect" para cada canal — distribuindo crédito proporcional à contribuição estatística na conversão.</div>
+        <div class="stack-tags">
+          <span class="st">Python</span><span class="st">Pandas</span><span class="st">NetworkX</span><span class="st">Scipy</span>
+        </div>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-cat">Orquestração & Infra</div>
+        <div class="stack-card-title">Airflow + Databricks</div>
+        <div class="stack-card-desc">DAGs de orquestração com atualização diária, monitoramento de falhas e alertas. Processamento distribuído de eventos com Databricks para volumes maiores.</div>
+        <div class="stack-tags">
+          <span class="st">Airflow</span><span class="st">Databricks</span><span class="st">Docker</span><span class="st">GCP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- DASHBOARDS -->
+<section class="section-pad" style="background:var(--bg2)">
+  <div class="container">
+    <div class="sec-label">Visualizações</div>
+    <h2 class="sec-title">Dashboards por <span>Produto</span></h2>
+    <p class="sec-desc">Cada produto financeiro possui sua própria suite de dashboards com visão geral de funil, análise de safra e comparativo de modelos de atribuição. <strong style="color:var(--accent3)">Todos os números abaixo são fictícios.</strong></p>
+
+    <div class="products-nav">
+      <button class="prod-btn active" onclick="showDash('conta')">Conta & Investimentos</button>
+      <button class="prod-btn" onclick="showDash('solar')">Financiamento Solar</button>
+      <button class="prod-btn" onclick="showDash('veiculos')">Financiamento de Veículos</button>
+      <button class="prod-btn" onclick="showDash('garantia')">Empréstimo c/ Garantia</button>
+    </div>
+
+    <!-- CONTA & INVESTIMENTOS -->
+    <div class="dashboard-wrapper active fade-in" id="dash-conta">
+      <div class="mock-dash">
+        <div class="mock-header">
+          <div class="mock-header-left">
+            <h3>Visão Geral · Conta &amp; Investimentos</h3>
+            <p>// atribuicao_last_click · Última atualização: Simulado</p>
+          </div>
+          <span class="mock-header-badge">DADOS SIMULADOS</span>
+        </div>
+        <div class="mock-attribution-tabs">
+          <span class="attr-tab last-click">Atribuição Last Click</span>
+          <span class="attr-tab markov">Atribuição Estatística (Markov Chains)</span>
+        </div>
+        <div class="kpi-bar">
+          <div class="kpi"><div class="kpi-label">Impressões</div><div class="kpi-val">48,2 Mi<span class="kpi-delta">+1.2%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Cliques</div><div class="kpi-val">512 K<span class="kpi-delta">+7.1%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Visitas</div><div class="kpi-val">380 K<span class="kpi-delta">+15%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Contas Abertas</div><div class="kpi-val">56 K<span class="kpi-delta">+12%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Contas Ativadas</div><div class="kpi-val">26 K<span class="kpi-delta">+9%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Investidores 30d</div><div class="kpi-val">2,8 K</div></div>
+          <div class="kpi"><div class="kpi-label">Saldo Total</div><div class="kpi-val">R$28 Mi</div></div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-panel">
+            <div class="panel-title">Visitas por Canal de Origem</div>
+            <div class="donut-wrap">
+              <div class="donut" style="background:conic-gradient(#00d9c0 0% 27%, #6366f1 27% 51%, #f59e0b 51% 75%, #ec4899 75% 100%)"></div>
+              <div class="donut-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#00d9c0"></div><span class="legend-label">Mídia Paga</span><span class="legend-val">27%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div><span class="legend-label">Direto</span><span class="legend-val">24%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div><span class="legend-label">Orgânico</span><span class="legend-val">24%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ec4899"></div><span class="legend-label">Mídia Paga Cross</span><span class="legend-val">18%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#64748b"></div><span class="legend-label">Outros</span><span class="legend-val">7%</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-title">Investimento em Mídia</div>
+            <div class="metrics-grid">
+              <div class="met"><span class="met-val">R$320K</span><span class="met-label">Invest. Total</span></div>
+              <div class="met"><span class="met-val amber">R$8,4K</span><span class="met-label">Ticket Médio</span></div>
+              <div class="met"><span class="met-val purple">R$28 Mi</span><span class="met-label">Saldo 30d</span></div>
+              <div class="met"><span class="met-val pink">R$31 Mi</span><span class="met-label">Aplicado Total</span></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-title">Visitas por Origem de Mídia</div>
+            <div class="bar-chart">
+              <div class="bar-row"><span class="bar-name">google</span><div class="bar-track"><div class="bar-fill" style="width:80%;background:linear-gradient(90deg,#00d9c0,#6366f1)"></div></div><span class="bar-val">0,18 Mi</span></div>
+              <div class="bar-row"><span class="bar-name">organic</span><div class="bar-track"><div class="bar-fill" style="width:55%;background:linear-gradient(90deg,#00d9c0,#6366f1)"></div></div><span class="bar-val">0,12 Mi</span></div>
+              <div class="bar-row"><span class="bar-name">salesforce</span><div class="bar-track"><div class="bar-fill" style="width:18%;background:linear-gradient(90deg,#00d9c0,#6366f1)"></div></div><span class="bar-val">0,04 Mi</span></div>
+              <div class="bar-row"><span class="bar-name">face-insta</span><div class="bar-track"><div class="bar-fill" style="width:12%;background:linear-gradient(90deg,#00d9c0,#6366f1)"></div></div><span class="bar-val">0,03 Mi</span></div>
+              <div class="bar-row"><span class="bar-name">bing</span><div class="bar-track"><div class="bar-fill" style="width:6%;background:linear-gradient(90deg,#00d9c0,#6366f1)"></div></div><span class="bar-val">0,01 Mi</span></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-title">Saldo por Produto Financeiro</div>
+            <div class="bar-chart">
+              <div class="bar-row"><span class="bar-name">CDB 100% CDI</span><div class="bar-track"><div class="bar-fill" style="width:70%;background:#f59e0b"></div></div><span class="bar-val">R$0,00</span></div>
+              <div class="bar-row"><span class="bar-name">CDB 102% CDI</span><div class="bar-track"><div class="bar-fill" style="width:50%;background:#f59e0b"></div></div><span class="bar-val">R$0,00</span></div>
+              <div class="bar-row"><span class="bar-name">CDB 104% CDI</span><div class="bar-track"><div class="bar-fill" style="width:40%;background:#f59e0b"></div></div><span class="bar-val">R$0,00</span></div>
+              <div class="bar-row"><span class="bar-name">CDB 110% CDI</span><div class="bar-track"><div class="bar-fill" style="width:30%;background:#f59e0b"></div></div><span class="bar-val">R$0,00</span></div>
+              <div class="bar-row"><span class="bar-name">CDB 120% CDI</span><div class="bar-track"><div class="bar-fill" style="width:15%;background:#f59e0b"></div></div><span class="bar-val">R$0,00</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOLAR -->
+    <div class="dashboard-wrapper" id="dash-solar">
+      <div class="mock-dash">
+        <div class="mock-header">
+          <div class="mock-header-left">
+            <h3>Visão Geral · Financiamento Solar</h3>
+            <p>// funil_completo · jan/2025 → mar/2026 · Dados simulados</p>
+          </div>
+          <span class="mock-header-badge">DADOS SIMULADOS</span>
+        </div>
+        <div class="mock-attribution-tabs">
+          <span class="attr-tab last-click">Atribuição Last Click</span>
+          <span class="attr-tab markov">Atribuição Estatística (Markov Chains)</span>
+        </div>
+        <div class="kpi-bar">
+          <div class="kpi"><div class="kpi-label">Impressões</div><div class="kpi-val">120 Mi<span class="kpi-delta">+2.3%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Cliques</div><div class="kpi-val">2,8 Mi<span class="kpi-delta">+5%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Visitas</div><div class="kpi-val">1,7 Mi<span class="kpi-delta">+11%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Simulações</div><div class="kpi-val">210 K<span class="kpi-delta">+11.8%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Propostas</div><div class="kpi-val">8,2 K<span class="kpi-delta">+3.8%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Aprovadas</div><div class="kpi-val">5,1 K<span class="kpi-delta">+64.7%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Contratos</div><div class="kpi-val">2,9 K<span class="kpi-delta">+56.5%</span></div></div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-panel">
+            <div class="panel-title">Simulações por Canal de Origem</div>
+            <div class="donut-wrap">
+              <div class="donut" style="background:conic-gradient(#00d9c0 0% 22%, #6366f1 22% 43%, #f59e0b 43% 55%, #ec4899 55% 68%, #34d399 68% 74%, #64748b 74% 100%)"></div>
+              <div class="donut-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#00d9c0"></div><span class="legend-label">Não identificado</span><span class="legend-val">39%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div><span class="legend-label">Deriv. App-site</span><span class="legend-val">21%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div><span class="legend-label">Mídia Paga</span><span class="legend-val">12%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ec4899"></div><span class="legend-label">Direto</span><span class="legend-val">9%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div><span class="legend-label">Orgânico</span><span class="legend-val">6%</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-title">Métricas de Performance</div>
+            <div class="metrics-grid">
+              <div class="met"><span class="met-val">R$1,9 Mi</span><span class="met-label">Investimento</span></div>
+              <div class="met"><span class="met-val amber">R$21K</span><span class="met-label">Ticket Médio</span></div>
+              <div class="met"><span class="met-val purple">R$460</span><span class="met-label">CAC</span></div>
+              <div class="met"><span class="met-val pink">2.100x</span><span class="met-label">ROAS</span></div>
+            </div>
+          </div>
+          <div class="dash-panel full">
+            <div class="panel-title">Evolução Mensal — Simulações e Contratos</div>
+            <div class="sparkline-wrap">
+              <svg viewBox="0 0 700 80" preserveAspectRatio="none">
+                <!-- Simulações -->
+                <polyline fill="none" stroke="#00d9c0" stroke-width="2" opacity=".8"
+                  points="20,60 65,55 110,52 155,50 200,45 245,40 290,42 335,44 380,48 425,35 470,30 515,28 560,15 605,12 650,10"/>
+                <!-- Contratos -->
+                <polyline fill="none" stroke="#6366f1" stroke-width="1.5" opacity=".6"
+                  points="20,70 65,68 110,67 155,65 200,63 245,60 290,58 335,57 380,55 425,50 470,48 515,44 560,30 605,22 650,18"/>
+                <text x="660" y="13" fill="#00d9c0" font-size="7" font-family="monospace">sims</text>
+                <text x="660" y="22" fill="#6366f1" font-size="7" font-family="monospace">contr</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VEÍCULOS -->
+    <div class="dashboard-wrapper" id="dash-veiculos">
+      <div class="mock-dash">
+        <div class="mock-header">
+          <div class="mock-header-left">
+            <h3>Visão Geral · Financiamento de Veículos</h3>
+            <p>// funil_multi_plataforma · APP · NA_PISTA · WEB · Dados simulados</p>
+          </div>
+          <span class="mock-header-badge">DADOS SIMULADOS</span>
+        </div>
+        <div class="mock-attribution-tabs">
+          <span class="attr-tab last-click">Atribuição Last Click</span>
+          <span class="attr-tab markov">Atribuição Estatística (Markov Chains)</span>
+        </div>
+        <div class="kpi-bar">
+          <div class="kpi"><div class="kpi-label">Impressões</div><div class="kpi-val">1,4 Bi<span class="kpi-delta">+1.6%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Cliques</div><div class="kpi-val">22 Mi<span class="kpi-delta">+85%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Visitas</div><div class="kpi-val">19 Mi<span class="kpi-delta">+67%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Simulações</div><div class="kpi-val">13 Mi<span class="kpi-delta">+67%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Propostas</div><div class="kpi-val">210 K<span class="kpi-delta">+67%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Aprovadas</div><div class="kpi-val">141 K<span class="kpi-delta">+71%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Contratos</div><div class="kpi-val">100 K<span class="kpi-delta">+71%</span></div></div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-panel">
+            <div class="panel-title">Simulações por Plataforma</div>
+            <div class="donut-wrap">
+              <div class="donut" style="background:conic-gradient(#6366f1 0% 41%,#00d9c0 41% 70%,#f59e0b 70% 100%)"></div>
+              <div class="donut-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div><span class="legend-label">NA_PISTA</span><span class="legend-val">41%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#00d9c0"></div><span class="legend-label">WEB</span><span class="legend-val">30%</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div><span class="legend-label">APP</span><span class="legend-val">27%</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-title">Métricas de Performance</div>
+            <div class="metrics-grid">
+              <div class="met"><span class="met-val">R$16 Mi</span><span class="met-label">Investimento</span></div>
+              <div class="met"><span class="met-val amber">R$41K</span><span class="met-label">Ticket Médio</span></div>
+              <div class="met"><span class="met-val purple">R$105</span><span class="met-label">CAC</span></div>
+              <div class="met"><span class="met-val pink">5.200x</span><span class="met-label">ROAS</span></div>
+            </div>
+          </div>
+          <div class="dash-panel full">
+            <div class="panel-title">Share por Plataforma ao Longo do Tempo — Produção (Safra Contrato)</div>
+            <table class="mock-table">
+              <thead>
+                <tr><th>Mês</th><th>APP Share</th><th>NA_PISTA Share</th><th>WEB Share</th><th>Contratos Total</th><th>Produção Total</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Jan 25</td><td class="dim">51%</td><td class="dim">10%</td><td class="dim">35%</td><td>7.800</td><td>R$ 302 Mi</td></tr>
+                <tr><td>Mar 25</td><td class="dim">57%</td><td class="dim">9%</td><td class="dim">29%</td><td>6.400</td><td>R$ 249 Mi</td></tr>
+                <tr><td>Jun 25</td><td class="dim">59%</td><td class="dim">11%</td><td class="dim">26%</td><td>6.200</td><td>R$ 251 Mi</td></tr>
+                <tr><td>Set 25</td><td class="dim">63%</td><td class="dim">10%</td><td class="dim">23%</td><td>6.900</td><td>R$ 294 Mi</td></tr>
+                <tr><td>Jan 26</td><td class="dim">62%</td><td class="dim">11%</td><td class="dim">23%</td><td>7.700</td><td>R$ 340 Mi</td></tr>
+                <tr><td><strong>Total</strong></td><td class="positive">~59%</td><td class="positive">~11%</td><td class="positive">~25%</td><td>100 K</td><td>R$ 4,3 Bi</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GARANTIA -->
+    <div class="dashboard-wrapper" id="dash-garantia">
+      <div class="mock-dash">
+        <div class="mock-header">
+          <div class="mock-header-left">
+            <h3>Visão Geral · Empréstimo com Garantia de Veículo</h3>
+            <p>// atribuicao_multi_canal · jan/2025 → mar/2026 · Dados simulados</p>
+          </div>
+          <span class="mock-header-badge">DADOS SIMULADOS</span>
+        </div>
+        <div class="mock-attribution-tabs">
+          <span class="attr-tab last-click">Atribuição Last Click</span>
+          <span class="attr-tab markov">Atribuição Estatística (Markov Chains)</span>
+        </div>
+        <div class="kpi-bar">
+          <div class="kpi"><div class="kpi-label">Impressões</div><div class="kpi-val">2,1 Bi<span class="kpi-delta">+1.6%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Cliques</div><div class="kpi-val">33 Mi<span class="kpi-delta">+60%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Visitas</div><div class="kpi-val">20 Mi<span class="kpi-delta">+60%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Simulações</div><div class="kpi-val">970 K<span class="kpi-delta">+4.8%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Propostas</div><div class="kpi-val">104 K<span class="kpi-delta">+74.9%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Aprovadas</div><div class="kpi-val">78 K<span class="kpi-delta">+47.4%</span></div></div>
+          <div class="kpi"><div class="kpi-label">Contratos</div><div class="kpi-val">37 K<span class="kpi-delta">+10.8%</span></div></div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-panel">
+            <div class="panel-title">Métricas de Custo</div>
+            <div class="metrics-grid">
+              <div class="met"><span class="met-val">R$22 Mi</span><span class="met-label">Invest. Total</span></div>
+              <div class="met"><span class="met-val amber">R$40K</span><span class="met-label">Ticket Médio</span></div>
+              <div class="met"><span class="met-val purple">R$404</span><span class="met-label">CAC</span></div>
+              <div class="met"><span class="met-val pink">R$1,4 Bi</span><span class="met-label">Produção</span></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="panel-title">Share por Canal de Origem — Safra Contrato</div>
+            <div class="bar-chart">
+              <div class="bar-row"><span class="bar-name">Direto</span><div class="bar-track"><div class="bar-fill" style="width:80%;background:#00d9c0"></div></div><span class="bar-val">~60%</span></div>
+              <div class="bar-row"><span class="bar-name">CRM Cross</span><div class="bar-track"><div class="bar-fill" style="width:40%;background:#6366f1"></div></div><span class="bar-val">~4%</span></div>
+              <div class="bar-row"><span class="bar-name">CRM</span><div class="bar-track"><div class="bar-fill" style="width:15%;background:#f59e0b"></div></div><span class="bar-val">~1.4%</span></div>
+              <div class="bar-row"><span class="bar-name">Deriv. App</span><div class="bar-track"><div class="bar-fill" style="width:55%;background:#ec4899"></div></div><span class="bar-val">~6%</span></div>
+              <div class="bar-row"><span class="bar-name">Mídia Paga</span><div class="bar-track"><div class="bar-fill" style="width:35%;background:#34d399"></div></div><span class="bar-val">~3%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- MARKOV -->
+<section class="section-pad">
+  <div class="container">
+    <div class="sec-label">Algoritmo Central</div>
+    <h2 class="sec-title">Atribuição via <span>Cadeias de Markov</span></h2>
+
+    <div class="markov-box fade-in">
+      <div class="markov-title">Como funciona o modelo</div>
+      <div class="markov-desc">
+        O modelo de Markov trata a jornada do cliente como uma sequência de estados (canais de mídia) com transições probabilísticas entre eles. O crédito de cada canal é calculado pelo seu <strong style="color:#a78bfa">"removal effect"</strong> — ou seja, quanto a taxa de conversão cai quando aquele canal é removido do grafo de transições. Isso distribui o crédito de forma proporcional à contribuição real de cada touchpoint.
+      </div>
+      <div class="markov-steps">
+        <div class="markov-step">
+          <div class="ms-num">// 01</div>
+          <div class="ms-title">Construção do Grafo</div>
+          <div class="ms-desc">Cada jornada de cliente é mapeada como sequência de canais → conversão. Calcula-se a probabilidade de transição entre cada par de canais.</div>
+        </div>
+        <div class="markov-step">
+          <div class="ms-num">// 02</div>
+          <div class="ms-title">Cálculo de Conversão Base</div>
+          <div class="ms-desc">Com o grafo completo, calcula-se a probabilidade de conversão total considerando todos os caminhos possíveis até o estado absorvente.</div>
+        </div>
+        <div class="markov-step">
+          <div class="ms-num">// 03</div>
+          <div class="ms-title">Removal Effect</div>
+          <div class="ms-desc">Para cada canal C, recalcula-se a prob. de conversão sem C. O removal effect é a diferença entre a taxa com e sem o canal.</div>
+        </div>
+        <div class="markov-step">
+          <div class="ms-num">// 04</div>
+          <div class="ms-title">Redistribuição</div>
+          <div class="ms-desc">O crédito total (contratos/receita) é redistribuído proporcionalmente ao removal effect de cada canal, normalizando para 100%.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- RESULTADOS -->
+<section class="section-pad" style="background:var(--bg2)">
+  <div class="container">
+    <div class="sec-label">Resultados & Aprendizados</div>
+    <h2 class="sec-title">O que o projeto <span>entregou</span></h2>
+
+    <div class="results-row fade-in">
+      <div class="result-card">
+        <span class="result-num">4</span>
+        <div class="result-label">Produtos com cobertura completa</div>
+        <p class="result-sub">Conta & Investimentos, Financiamento Solar, Financiamento de Veículos e Empréstimo com Garantia, cada um com sua jornada e funil específicos.</p>
+      </div>
+      <div class="result-card">
+        <span class="result-num purple">2</span>
+        <div class="result-label">Modelos de atribuição em paralelo</div>
+        <p class="result-sub">Last Click e Markov acessíveis com um toggle no dashboard, permitindo comparação direta e análise do viés do modelo tradicional.</p>
+      </div>
+      <div class="result-card">
+        <span class="result-num amber">360°</span>
+        <div class="result-label">Visibilidade da jornada</div>
+        <p class="result-sub">Do primeiro clique até o contrato assinado, com quebra por canal, plataforma, campanha, produto financeiro e tipo de negócio.</p>
+      </div>
+    </div>
+
+    <div class="insights-grid fade-in">
+      <div class="insight-card">
+        <div class="ins-icon">🔀</div>
+        <div class="ins-title">Canais Subestimados pelo Last Click</div>
+        <p class="ins-text">O modelo Markov revelou que canais de awareness (display, vídeo) tinham <span class="ins-highlight">contribuição real 2-3x maior</span> do que indicava o Last Click, que os ignorava por não serem o último touchpoint.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ins-icon">📱</div>
+        <div class="ins-title">Multi-Plataforma no Financiamento</div>
+        <p class="ins-text">A análise de APP vs NA_PISTA vs WEB revelou dinâmicas distintas por produto — o APP dominava contratos mas a conversão web tinha <span class="ins-highlight">ticket médio maior</span>.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ins-icon">📈</div>
+        <div class="ins-title">Funil Granular por Safra</div>
+        <p class="ins-text">A visão analítica de safra de contratos por canal e mês permitiu identificar <span class="ins-highlight">sazonalidades específicas</span> por produto e ajustar estratégias de investimento proativamente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="proj-footer">
+  <a href="portfolio.html" class="pf-back">← Voltar ao Portfólio</a>
+  <div class="pf-info">
+    <p>Wesley Batista Luz · <span>Analytics Engineer</span></p>
+    <p style="margin-top:.25rem">Dados 100% simulados · Fins de portfólio apenas</p>
+  </div>
+</div>
+
+<script>
+// Cursor
+const cur=document.getElementById('cur'),curR=document.getElementById('curR');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+(function anim(){cur.style.left=mx+'px';cur.style.top=my+'px';rx+=(mx-rx)*.12;ry+=(my-ry)*.12;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(anim)})();
+document.querySelectorAll('a,button').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.width='18px';cur.style.height='18px';curR.style.width='50px';curR.style.height='50px'});
+  el.addEventListener('mouseleave',()=>{cur.style.width='10px';cur.style.height='10px';curR.style.width='32px';curR.style.height='32px'});
+});
+
+// Fade in
+const faders=document.querySelectorAll('.fade-in');
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:.1});
+faders.forEach(el=>obs.observe(el));
+
+// Dashboard tabs
+function showDash(id){
+  document.querySelectorAll('.dashboard-wrapper').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.prod-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('dash-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
